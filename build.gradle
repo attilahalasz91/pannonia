@@ -1,6 +1,5 @@
 buildscript {
     
-
     repositories {
         mavenLocal()
         mavenCentral()
@@ -11,8 +10,6 @@ buildscript {
     }
     dependencies {
         classpath 'com.android.tools.build:gradle:3.2.0'
-        
-
     }
 }
 
@@ -37,6 +34,7 @@ allprojects {
         maven { url "https://oss.sonatype.org/content/repositories/snapshots/" }
         maven { url "https://oss.sonatype.org/content/repositories/releases/" }
     }
+    
 }
 
 project(":desktop") {
@@ -83,6 +81,15 @@ project(":core") {
         compile "com.badlogicgames.gdx:gdx:$gdxVersion"
         compile "com.badlogicgames.gdx:gdx-box2d:$gdxVersion"
         
+    }
+}
+
+project(":maploader") {
+    apply plugin: "java"
+    apply plugin: "war"
+    
+    dependencies {
+        providedCompile "org.projectlombok:lombok:1.18.2"
     }
 }
 
