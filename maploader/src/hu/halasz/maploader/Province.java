@@ -10,8 +10,6 @@ import java.util.Set;
 public class Province {
 
     @Getter
-    List<Pixel> pixels = new ArrayList<>();
-    @Getter
     Set<Pixel> borderPixels = new HashSet<>();
     @Getter
     int rgbId;
@@ -24,7 +22,4 @@ public class Province {
         borderPixels.add(pixel);
     }
 
-    public void addPixel(Pixel pixel) {
-        pixels.add(pixel);
-    }
 }

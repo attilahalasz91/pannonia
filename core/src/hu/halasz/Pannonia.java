@@ -84,10 +84,10 @@ public class Pannonia extends ApplicationAdapter {
             borderPixels = defaultInputHandler.province.getBorderPixels();
             for (Pixel borderPixel : borderPixels) {
                 //shapeRenderer.point(borderPixel.getX(),(1079 -borderPixel.getY()), 0);
-                shapeRenderer.circle(
+                shapeRenderer.rect(
                         borderPixel.getX() / MASK_TO_WORD_COORDINATE_RATE,
                         convertYCoordFromCoordSysYdownToYup(borderPixel) / MASK_TO_WORD_COORDINATE_RATE,
-                        0.2f);
+                        0.2f,0.2f);
             }
         }
         shapeRenderer.end();

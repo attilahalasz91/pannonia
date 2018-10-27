@@ -13,8 +13,6 @@ public class BmpMapProcessor {
     @Getter
     Map<Integer, Province> provinceMap;
     @Getter
-    Map<Pixel, Pixel> pixelMap;
-    @Getter
     BufferedImage image;
 
     public BmpMapProcessor() {
@@ -28,13 +26,15 @@ public class BmpMapProcessor {
         int height = image.getHeight();
 
         provinceMap = new HashMap<>();
-        pixelMap = new HashMap<>();
 
+        int leftRgb;
+        int rightRgb;
+        int upRgb;
+        int downRgb;
+        int rgb;
         for (int i = 0; i < width; i++) {
             for (int j = 0; j < height; j++) {
-                int rgb = image.getRGB(i, j);
-                Pixel pixel = new Pixel(i, j, rgb);
-                pixelMap.put(pixel, pixel);
+                rgb = image.getRGB(i, j);
 
                 Province province;
                 if (!provinceMap.containsKey(rgb)) {
@@ -43,56 +43,47 @@ public class BmpMapProcessor {
                 } else {
                     province = provinceMap.get(rgb);
                 }
-                province.addPixel(pixel);
-            }
-        }
-
-        for (int i = 0; i < width; i++) {
-            for (int j = 0; j < height; j++) {
-                int rgb = image.getRGB(i, j);
-                Pixel pixel = pixelMap.get(new Pixel(i, j, 0));
-                Province province = provinceMap.get(rgb);
 
                 int left = i - 1;
                 if (left >= 0) {
-                    Pixel leftPixel = pixelMap.get(new Pixel(left, j, 0));
-                    addNeighbors(rgb, pixel, province, leftPixel);
+                    leftRgb = image.getRGB(left, j);
+                    if (leftRgb != rgb) {
+                        province.addBorderPixel(new Pixel(i, j, rgb));
+                    }
                 } else {
-                    province.addBorderPixel(pixel);
+                    province.addBorderPixel(new Pixel(i, j, rgb));
                 }
 
                 int right = i + 1;
                 if (right < width) {
-                    Pixel rightPixel = pixelMap.get(new Pixel(right, j, 0));
-                    addNeighbors(rgb, pixel, province, rightPixel);
+                    rightRgb =  image.getRGB(right, j);
+                    if (rightRgb != rgb) {
+                        province.addBorderPixel(new Pixel(i, j, rgb));
+                    }
                 } else {
-                    province.addBorderPixel(pixel);
+                    province.addBorderPixel(new Pixel(i, j, rgb));
                 }
 
                 int up = j - 1;
                 if (up >= 0) {
-                    Pixel upPixel = pixelMap.get(new Pixel(i, up, 0));
-                    addNeighbors(rgb, pixel, province, upPixel);
+                    upRgb =  image.getRGB(i, up);
+                    if (upRgb != rgb) {
+                        province.addBorderPixel(new Pixel(i, j, rgb));
+                    }
                 } else {
-                    province.addBorderPixel(pixel);
+                    province.addBorderPixel(new Pixel(i, j, rgb));
                 }
 
                 int down = j + 1;
                 if (down < height) {
-                    Pixel downPixel = pixelMap.get(new Pixel(i, down, 0));
-                    addNeighbors(rgb, pixel, province, downPixel);
+                    downRgb = image.getRGB(i, down);
+                    if (downRgb != rgb) {
+                        province.addBorderPixel(new Pixel(i, j, rgb));
+                    }
                 } else {
-                    province.addBorderPixel(pixel);
+                    province.addBorderPixel(new Pixel(i, j, rgb));
                 }
-
             }
-        }
-    }
-
-    private static void addNeighbors(int rgb, Pixel currentPixel, Province province, Pixel neighborPixel) {
-        currentPixel.addNeighbourPixel(neighborPixel);
-        if (neighborPixel.getRgbId() != rgb) {
-            province.addBorderPixel(currentPixel);
         }
     }
 }
