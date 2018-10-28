@@ -7,11 +7,14 @@ import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.Pixmap;
 import com.badlogic.gdx.graphics.Texture;
+import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.Sprite;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.math.Vector3;
+import com.badlogic.gdx.scenes.scene2d.ui.Label;
+import com.badlogic.gdx.utils.Align;
 import hu.halasz.maploader.BmpMapProcessor;
 import hu.halasz.maploader.Pixel;
 
@@ -35,6 +38,8 @@ public class Pannonia extends ApplicationAdapter {
     DefaultInputHandler defaultInputHandler;
     Set<Pixel> borderPixels;
     ShapeRenderer shapeRenderer;
+    BitmapFont bitmapFont;
+    Label label1;
 
     @Override
     public void create() {
@@ -65,6 +70,14 @@ public class Pannonia extends ApplicationAdapter {
         shapeRenderer = new ShapeRenderer();
         shapeRenderer.setColor(Color.RED);
 
+        Label.LabelStyle label1Style = new Label.LabelStyle();
+        bitmapFont = new BitmapFont();
+        label1Style.font = bitmapFont;
+        label1Style.fontColor = Color.BLACK;
+        label1 = new Label("Duna-Tisza köze",label1Style);
+        label1.setSize(200,50);
+        label1.setPosition(650,530);
+        label1.setAlignment(Align.center);
     }
 
     @Override
@@ -78,6 +91,9 @@ public class Pannonia extends ApplicationAdapter {
 
         batch.begin();
         mapSprite.draw(batch);
+        //bitmapFont.draw(batch, "Duna-Tisza köze", 650,530);
+        //bitmapFont.draw(batch, Float.toString(Gdx.graphics.getFramesPerSecond()), 50, 50);
+
         batch.end();
         shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
         if (defaultInputHandler.province != null) {
@@ -85,9 +101,9 @@ public class Pannonia extends ApplicationAdapter {
             for (Pixel borderPixel : borderPixels) {
                 //shapeRenderer.point(borderPixel.getX(),(1079 -borderPixel.getY()), 0);
                 shapeRenderer.rect(
-                        borderPixel.getX() / MASK_TO_WORD_COORDINATE_RATE,
-                        convertYCoordFromCoordSysYdownToYup(borderPixel) / MASK_TO_WORD_COORDINATE_RATE,
-                        0.2f,0.2f);
+                        borderPixel.getX() / MASK_TO_WORD_COORDINATE_RATE -0.2f,
+                        convertYCoordFromCoordSysYdownToYup(borderPixel) / MASK_TO_WORD_COORDINATE_RATE - 0.2f,
+                        0.5f,0.5f);
             }
         }
         shapeRenderer.end();

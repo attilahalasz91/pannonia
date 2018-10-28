@@ -8,7 +8,8 @@ import java.util.List;
 import java.util.Set;
 
 public class Province {
-
+    @Getter
+    Set<Province> borderProvinces = new HashSet<>();
     @Getter
     Set<Pixel> borderPixels = new HashSet<>();
     @Getter
