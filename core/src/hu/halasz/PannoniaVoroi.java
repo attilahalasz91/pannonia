@@ -7,28 +7,31 @@ import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.Pixmap;
 import com.badlogic.gdx.graphics.Texture;
+import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.PolygonRegion;
 import com.badlogic.gdx.graphics.g2d.PolygonSprite;
 import com.badlogic.gdx.graphics.g2d.PolygonSpriteBatch;
+import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.math.EarClippingTriangulator;
 import com.badlogic.gdx.math.MathUtils;
 import hu.halasz.maploader.Pixel;
+import mikera.vectorz.Vector4;
+import org.joda.time.MutableDateTime;
 import org.kynosarges.tektosyne.geometry.GeoUtils;
 import org.kynosarges.tektosyne.geometry.LineD;
 import org.kynosarges.tektosyne.geometry.PointD;
-import org.kynosarges.tektosyne.geometry.PointI;
 import org.kynosarges.tektosyne.geometry.RectD;
 import org.kynosarges.tektosyne.geometry.Voronoi;
-import org.kynosarges.tektosyne.geometry.VoronoiEdge;
 import org.kynosarges.tektosyne.geometry.VoronoiResults;
 import org.kynosarges.tektosyne.subdivision.Subdivision;
-import org.kynosarges.tektosyne.subdivision.SubdivisionEdge;
-import org.kynosarges.tektosyne.subdivision.VoronoiMap;
 
-import java.time.LocalDateTime;
-import java.util.Arrays;
+import javax.imageio.ImageIO;
+import java.awt.image.BufferedImage;
+import java.io.File;
+import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
@@ -58,16 +61,41 @@ public class PannoniaVoroi extends ApplicationAdapter {
     VoronoiMapper voronoiMapper;
 
     Texture texture;
+    Pixmap pix;
     EarClippingTriangulator triangulator;
     PolygonRegion polyReg;
     PolygonSpriteBatch polygonSpriteBatch;
     PolygonSprite polygonSprite;
     TextureRegion polygonTextureRegion;
 
+    BitmapFont font;
+    private SpriteBatch batch;
+    MutableDateTime mutableDateTime;
+    float timer;
+
     @Override
     public void create() {
+        /*BufferedImage image = null;
+        try {
+            image = ImageIO.read(new File("sic.bmp"));
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        List<PointD> p = new ArrayList<>();
+        for (int i = 0; i < image.getWidth(); i++) {
+            for (int j = 0; j < image.getHeight(); j++) {
+                int rgb = image.getRGB(i, j);
+                if (rgb == -16776961) {
+                    p.add(new PointD(i, j));
+                }
+            }
+        }
+        pointDS = new PointD[p.size()];
+        for (int i = 0; i < p.size(); i++) {
+            pointDS[i] = p.get(i);
+        }*/
         //random points
-        pointDS = GeoUtils.randomPoints(1000, new RectD(1, 1, MASK_BMP_WIDTH, MASK_BMP_HEIGHT));
+        pointDS = GeoUtils.randomPoints(1000, new RectD(500, 1, MASK_BMP_WIDTH, MASK_BMP_HEIGHT));
 
         voronoiResults = Voronoi.findAll(pointDS);
         voronoiRegions = voronoiResults.voronoiRegions();
@@ -103,6 +131,15 @@ public class PannoniaVoroi extends ApplicationAdapter {
 
         shapeRenderer = new ShapeRenderer();
 
+        font = new BitmapFont();
+        font.getData().setScale(0.5f);
+        font.getRegion().getTexture().setFilter(Texture.TextureFilter.Linear, Texture.TextureFilter.Linear);
+        batch = new SpriteBatch();
+
+        mutableDateTime = new MutableDateTime(
+                888, 12, 11, 1, 1, 1, 1);
+        timer = 0;
+
         Pixmap pix = new Pixmap(1, 1, Pixmap.Format.RGBA8888);
         pix.setColor(Color.LIGHT_GRAY);
         pix.fill();
@@ -117,19 +154,30 @@ public class PannoniaVoroi extends ApplicationAdapter {
 
     @Override
     public void render() {
+        timer += Gdx.graphics.getRawDeltaTime();
+        if (timer > 0.5f) {
+            mutableDateTime.addHours(1);
+            timer = 0;
+        }
         mapScrollWatcher();
         handleInput();
         cam.update();
         shapeRenderer.setProjectionMatrix(cam.combined);
         polygonSpriteBatch.setProjectionMatrix(cam.combined);
+        batch.setProjectionMatrix(cam.combined);
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
+
+        batch.begin();
+        font.draw(batch, mutableDateTime.toString(), 100, 100);
+        font.draw(batch, "FPS: " + Gdx.graphics.getFramesPerSecond(), 100, 300);
+        batch.end();
 
         polygonSpriteBatch.begin();
         for (VoronoiCell voronoiCell : voronoiMapper.voronoiCellList) {
             float[] verticesF = voronoiCell.getVerticesF();
             polyReg = new PolygonRegion(polygonTextureRegion, verticesF, triangulator.computeTriangles(verticesF).toArray());
             polygonSprite = new PolygonSprite(polyReg);
-            polygonSprite.setColor(Color.GREEN); // felülírja pix colort
+            polygonSprite.setColor(voronoiCell.getColor()); // felülírja pix colort
             polygonSprite.draw(polygonSpriteBatch);
         }
         polygonSpriteBatch.end();
@@ -153,11 +201,11 @@ public class PannoniaVoroi extends ApplicationAdapter {
             }
         }
 
-        // draw edges of Delaunay triangulation - gráf pontok
+     /*   // draw edges of Delaunay triangulation - gráf pontok
         shapeRenderer.setColor(Color.GREEN);
         for (LineD edge: voronoiMapper.getDelaunayEdges()) {
             shapeRenderer.line((float) edge.start.x, (float)edge.start.y, (float)edge.end.x, (float)edge.end.y);;
-        }
+        }*/
 
         // draw generated points - not the exact center, az ->  Geoutils center of poly
         shapeRenderer.setColor(Color.BLACK);

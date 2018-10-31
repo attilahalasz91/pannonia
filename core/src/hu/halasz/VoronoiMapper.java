@@ -72,6 +72,13 @@ public class VoronoiMapper {
 
         delaunayEdges = voronoiResults.delaunayEdges();
 
+        for (VoronoiCell voronoiCell : voronoiCellList) {
+            for (PointD neighborSite : voronoiCell.getNeighborSites()) {
+                VoronoiCell voronoiNeighbour = voronoiCellMap.get(neighborSite);
+                voronoiCell.addNeighbour(voronoiNeighbour);
+            }
+        }
+
     }
 
 }
