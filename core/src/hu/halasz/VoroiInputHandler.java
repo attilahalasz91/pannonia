@@ -6,8 +6,11 @@ import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.math.Vector3;
 import org.kynosarges.tektosyne.geometry.GeoUtils;
+import org.kynosarges.tektosyne.geometry.LineD;
 import org.kynosarges.tektosyne.geometry.PointD;
 import org.kynosarges.tektosyne.geometry.PolygonLocation;
+
+import java.util.List;
 
 import static hu.halasz.PannoniaVoroi.WORLD_WIDTH;
 
@@ -16,10 +19,13 @@ public class VoroiInputHandler implements InputProcessor {
     private OrthographicCamera cam;
     PointD[][] voronoiRegions;
     PointD[] selectedRegion;
+    VoronoiMapper voronoiMapper;
+    List<LineD> selectedEdges;
 
-    public VoroiInputHandler(OrthographicCamera cam,  PointD[][] voronoiRegions) {
+    public VoroiInputHandler(OrthographicCamera cam,  PointD[][] voronoiRegions, VoronoiMapper voronoiMapper) {
         this.cam = cam;
         this.voronoiRegions = voronoiRegions;
+        this.voronoiMapper = voronoiMapper;
     }
 
     @Override
@@ -45,13 +51,24 @@ public class VoroiInputHandler implements InputProcessor {
     @Override
     public boolean touchUp(int screenX, int screenY, int pointer, int button) {
         Vector3 tp = getMousePosInGameWorld();
-        for (PointD[] voronoiRegion : voronoiRegions) {
+        List<VoronoiCell> voronoiCellList = voronoiMapper.getVoronoiCellList();
+        for (VoronoiCell voronoiCell : voronoiCellList) {
+            PointD[] verticesD = voronoiCell.getVerticesD();
+            PolygonLocation polygonLocation = GeoUtils.pointInPolygon(new PointD(tp.x, tp.y), verticesD);
+            if (polygonLocation.equals(PolygonLocation.INSIDE)){
+                selectedEdges = voronoiCell.getEdges();
+                selectedRegion = verticesD;
+
+            }
+        }
+
+        /*for (PointD[] voronoiRegion : voronoiRegions) {
             PolygonLocation polygonLocation = GeoUtils.pointInPolygon(new PointD(tp.x, tp.y), voronoiRegion);
             if (polygonLocation.equals(PolygonLocation.INSIDE)){
                 selectedRegion = voronoiRegion;
 
             }
-        }
+        }*/
         return false;
     }
 
