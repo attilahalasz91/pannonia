@@ -3,6 +3,7 @@ package hu.halasz;
 import com.badlogic.gdx.ApplicationAdapter;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.Color;
+import com.badlogic.gdx.graphics.Colors;
 import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.Pixmap;
@@ -18,6 +19,7 @@ import com.badlogic.gdx.math.EarClippingTriangulator;
 import com.badlogic.gdx.math.MathUtils;
 import hu.halasz.maploader.Pixel;
 import mikera.vectorz.Vector4;
+import org.joda.time.LocalDateTime;
 import org.joda.time.MutableDateTime;
 import org.kynosarges.tektosyne.geometry.GeoUtils;
 import org.kynosarges.tektosyne.geometry.LineD;
@@ -60,13 +62,14 @@ public class PannoniaVoroi extends ApplicationAdapter {
 
     VoronoiMapper voronoiMapper;
 
-    Texture texture;
-    Pixmap pix;
-    EarClippingTriangulator triangulator;
-    PolygonRegion polyReg;
+
+    //Pixmap pix;
+    //EarClippingTriangulator triangulator;
+    // PolygonRegion polyReg;
     PolygonSpriteBatch polygonSpriteBatch;
     PolygonSprite polygonSprite;
-    TextureRegion polygonTextureRegion;
+ /*   Texture texture;
+    TextureRegion polygonTextureRegion;*/
 
     BitmapFont font;
     private SpriteBatch batch;
@@ -94,8 +97,13 @@ public class PannoniaVoroi extends ApplicationAdapter {
         for (int i = 0; i < p.size(); i++) {
             pointDS[i] = p.get(i);
         }*/
+        Gdx.app.log("point generation start: ", LocalDateTime.now().toString());
+
         //random points
-        pointDS = GeoUtils.randomPoints(1000, new RectD(500, 1, MASK_BMP_WIDTH, MASK_BMP_HEIGHT));
+        pointDS = GeoUtils.randomPoints(10000, new RectD(500, 1, MASK_BMP_WIDTH, MASK_BMP_HEIGHT));
+
+        Gdx.app.log("point generation end: ", LocalDateTime.now().toString());
+        Gdx.app.log("voronoi generation start: ", LocalDateTime.now().toString());
 
         voronoiResults = Voronoi.findAll(pointDS);
         voronoiRegions = voronoiResults.voronoiRegions();
@@ -114,8 +122,10 @@ public class PannoniaVoroi extends ApplicationAdapter {
         voronoiEdges = voronoiResults.voronoiEdges;
         delaunayEdges = voronoiResults.delaunayEdges();
         generatorSites = voronoiResults.generatorSites;*/
-
+        Gdx.app.log("voronoi generation end with 1 lloyd: ", LocalDateTime.now().toString());
+        Gdx.app.log("mapper start: ", LocalDateTime.now().toString());
         voronoiMapper = new VoronoiMapper(pointDS);
+        Gdx.app.log("mapper end: ", LocalDateTime.now().toString());
 
         float w = Gdx.graphics.getWidth();
         float h = Gdx.graphics.getHeight();
@@ -140,12 +150,12 @@ public class PannoniaVoroi extends ApplicationAdapter {
                 888, 12, 11, 1, 1, 1, 1);
         timer = 0;
 
-        Pixmap pix = new Pixmap(1, 1, Pixmap.Format.RGBA8888);
+       /* Pixmap pix = new Pixmap(1, 1, Pixmap.Format.RGBA8888);
         pix.setColor(Color.LIGHT_GRAY);
         pix.fill();
         texture = new Texture(pix);
         polygonTextureRegion = new TextureRegion(texture);
-        triangulator = new EarClippingTriangulator();
+        triangulator = new EarClippingTriangulator();*/
 
         polygonSpriteBatch = new PolygonSpriteBatch();
 
@@ -174,9 +184,12 @@ public class PannoniaVoroi extends ApplicationAdapter {
 
         polygonSpriteBatch.begin();
         for (VoronoiCell voronoiCell : voronoiMapper.voronoiCellList) {
-            float[] verticesF = voronoiCell.getVerticesF();
-            polyReg = new PolygonRegion(polygonTextureRegion, verticesF, triangulator.computeTriangles(verticesF).toArray());
-            polygonSprite = new PolygonSprite(polyReg);
+            polygonSprite = new PolygonSprite(voronoiCell.getPolygonRegion());
+            /*if (polygonSprite == null) {
+                polygonSprite = new PolygonSprite(voronoiCell.getPolygonRegion());
+            } else {
+                polygonSprite.setRegion(voronoiCell.getPolygonRegion());
+            }*/
             polygonSprite.setColor(voronoiCell.getColor()); // felülírja pix colort
             polygonSprite.draw(polygonSpriteBatch);
         }
@@ -194,7 +207,7 @@ public class PannoniaVoroi extends ApplicationAdapter {
         }
 
         //selected
-        if (voroiInputHandler.selectedRegion != null) {
+        if (voroiInputHandler.selectedEdges != null) {
             shapeRenderer.setColor(Color.RED);
             for (LineD lineD : voroiInputHandler.selectedEdges) {
                 shapeRenderer.line(((float) lineD.start.x), ((float) lineD.start.y), ((float) lineD.end.x), ((float) lineD.end.y));
@@ -207,11 +220,31 @@ public class PannoniaVoroi extends ApplicationAdapter {
             shapeRenderer.line((float) edge.start.x, (float)edge.start.y, (float)edge.end.x, (float)edge.end.y);;
         }*/
 
-        // draw generated points - not the exact center, az ->  Geoutils center of poly
+      /*  // draw generated points - not the exact center, az ->  Geoutils center of poly
         shapeRenderer.setColor(Color.BLACK);
         for (PointD point : voronoiMapper.getSiteList()) {
             shapeRenderer.circle(((float) point.x), ((float) point.y), 1);
-        }
+        }*/
+
+      if (voroiInputHandler.islandCellList != null){
+          shapeRenderer.setColor(Color.BLACK);
+          for (VoronoiCell voronoiCell : voroiInputHandler.islandCellList) {
+              for (VoronoiCell neighbour : voronoiCell.getNeighbours()) {
+                  if (neighbour.getHeight() <= 0.2f){
+                      List<PointD> same = new ArrayList<>();
+                      for (PointD vertex : voronoiCell.getVertices()) {
+                          for (PointD neighbourVertex : neighbour.getVertices()) {
+                              if (vertex.equals(neighbourVertex)){
+                                  same.add(vertex);
+                              }
+                          }
+                      }
+                      shapeRenderer.rectLine(((float) same.get(0).x), ((float) same.get(0).y),
+                              ((float) same.get(1).x), ((float) same.get(1).y), 2);
+                  }
+              }
+          }
+      }
 
         shapeRenderer.end();
     }

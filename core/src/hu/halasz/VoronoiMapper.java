@@ -1,6 +1,9 @@
 package hu.halasz;
 
+import com.badlogic.gdx.Gdx;
+import com.badlogic.gdx.math.EarClippingTriangulator;
 import lombok.Getter;
+import org.joda.time.LocalDateTime;
 import org.kynosarges.tektosyne.geometry.LineD;
 import org.kynosarges.tektosyne.geometry.PointD;
 import org.kynosarges.tektosyne.geometry.Voronoi;
@@ -34,13 +37,15 @@ public class VoronoiMapper {
         voronoiCellList = new ArrayList<>();
         siteList = Arrays.asList(sites);
 
-        voronoiResults = Voronoi.findAll(sites);
-        VoronoiMap voronoiMap = new VoronoiMap(voronoiResults);
+        voronoiResults = Voronoi.findAll(sites);Gdx.app.log("voronoiMapS", LocalDateTime.now().toString());
+        VoronoiMap voronoiMap = new VoronoiMap(voronoiResults);Gdx.app.log("voronoiMapE", LocalDateTime.now().toString());
         Subdivision source = voronoiMap.source();
-
+        Gdx.app.log("delaunaySubdivisionS", LocalDateTime.now().toString());
         Subdivision delaunaySubdivision = voronoiResults.toDelaunaySubdivision(true);
-
+        Gdx.app.log("delaunaySubdivisionE ", LocalDateTime.now().toString());
+        Gdx.app.log("iterate points start ", LocalDateTime.now().toString());
         for (PointD site : sites) {
+
             //locate the face to this site on the planar subdivision graph
             SubdivisionFace siteFace = source.findFace(site);
 
@@ -50,9 +55,6 @@ public class VoronoiMapper {
             //cycle through this edge for the polygon vertices
             PointD[] polygonVertices = outerEdge.cyclePolygon();
             List<PointD> polygonVericesList = Arrays.asList(polygonVertices);
-
-            //the center of the polygon
-            PointD centroid = outerEdge.cycleCentroid();
 
             //all the edges of the polygon as lineD
             List<LineD> polygonEdgesList = new ArrayList<>();
@@ -65,10 +67,11 @@ public class VoronoiMapper {
             //get the neighbour sites from the delunarySubdivision graph (because it's a graph from the sites)
             List<PointD> neighborSitesList = delaunaySubdivision.getNeighbors(site);
 
-            VoronoiCell voronoiCell = new VoronoiCell(site, centroid, polygonEdgesList, polygonVericesList, neighborSitesList, polygonVertices);
+            VoronoiCell voronoiCell = new VoronoiCell(site, polygonEdgesList, polygonVericesList, neighborSitesList, polygonVertices);
             voronoiCellMap.put(site, voronoiCell);
             voronoiCellList.add(voronoiCell);
         }
+        Gdx.app.log("iterate pints end ", LocalDateTime.now().toString());
 
         delaunayEdges = voronoiResults.delaunayEdges();
 

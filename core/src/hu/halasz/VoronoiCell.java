@@ -1,6 +1,12 @@
 package hu.halasz;
 
 import com.badlogic.gdx.graphics.Color;
+import com.badlogic.gdx.graphics.Pixmap;
+import com.badlogic.gdx.graphics.Texture;
+import com.badlogic.gdx.graphics.g2d.PolygonRegion;
+import com.badlogic.gdx.graphics.g2d.PolygonSprite;
+import com.badlogic.gdx.graphics.g2d.TextureRegion;
+import com.badlogic.gdx.math.EarClippingTriangulator;
 import lombok.Getter;
 import lombok.Setter;
 import org.kynosarges.tektosyne.geometry.LineD;
@@ -14,8 +20,6 @@ public class VoronoiCell {
 
     @Getter
     private PointD site;
-    @Getter
-    private PointD centroid;
     @Getter
     private List<VoronoiCell> neighbours;
     @Getter
@@ -33,15 +37,26 @@ public class VoronoiCell {
     private float height;
     @Getter
     @Setter
-    private boolean isUsed;
-    @Getter
-    @Setter
     Color color;
+    @Getter
+    PolygonRegion polygonRegion;
 
-    public VoronoiCell(PointD site, PointD centroid, List<LineD> edges, List<PointD> vertices, List<PointD> neighborSites, PointD[] verticesD) {
+    private static EarClippingTriangulator triangulator;
+    private static Texture texture;
+    private static TextureRegion polygonTextureRegion;
+
+    static {
+        Pixmap pix = new Pixmap(1, 1, Pixmap.Format.RGBA8888);
+        pix.setColor(Color.LIGHT_GRAY);
+        pix.fill();
+        triangulator = new EarClippingTriangulator();
+        texture = new Texture(pix);
+        polygonTextureRegion = new TextureRegion(texture);
+    }
+
+    public VoronoiCell(PointD site, List<LineD> edges, List<PointD> vertices, List<PointD> neighborSites, PointD[] verticesD) {
         this.verticesD = verticesD;
         this.site = site;
-        this.centroid = centroid;
         this.edges = edges;
         this.vertices = vertices;
         this.neighborSites = neighborSites;
@@ -53,10 +68,14 @@ public class VoronoiCell {
             verticesF[i] = ((float) doubles[i]);
         }
 
-       this.color = Color.GREEN;
+
+        this.polygonRegion = new PolygonRegion(polygonTextureRegion, verticesF, triangulator.computeTriangles(verticesF).toArray());
+
+        this.color = new Color(94f / 255, 79f / 255, 162f / 255, 1);
+        this.height = 0;
     }
 
-    public void addNeighbour (VoronoiCell neighbour) {
+    public void addNeighbour(VoronoiCell neighbour) {
         neighbours.add(neighbour);
     }
 
