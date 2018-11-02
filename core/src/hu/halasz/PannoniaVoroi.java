@@ -51,17 +51,12 @@ public class PannoniaVoroi extends ApplicationAdapter {
     PointD[] pointDS;
 
     PointD[][] voronoiRegions;
-    /*PointD[] voronoiVertices;
-    VoronoiEdge[] voronoiEdges;
-    LineD[] delaunayEdges;
-    PointD[] generatorSites;*/
 
     Set<Pixel> borderPixels;
     ShapeRenderer shapeRenderer;
     Subdivision source;
 
     VoronoiMapper voronoiMapper;
-
 
     //Pixmap pix;
     //EarClippingTriangulator triangulator;
@@ -118,10 +113,7 @@ public class PannoniaVoroi extends ApplicationAdapter {
         voronoiResults = Voronoi.findAll(pointDS);
 
         voronoiRegions = voronoiResults.voronoiRegions();
-        /*voronoiVertices = voronoiResults.voronoiVertices;
-        voronoiEdges = voronoiResults.voronoiEdges;
-        delaunayEdges = voronoiResults.delaunayEdges();
-        generatorSites = voronoiResults.generatorSites;*/
+
         Gdx.app.log("voronoi generation end with 1 lloyd: ", LocalDateTime.now().toString());
         Gdx.app.log("mapper start: ", LocalDateTime.now().toString());
         voronoiMapper = new VoronoiMapper(pointDS);
@@ -150,13 +142,6 @@ public class PannoniaVoroi extends ApplicationAdapter {
                 888, 12, 11, 1, 1, 1, 1);
         timer = 0;
 
-       /* Pixmap pix = new Pixmap(1, 1, Pixmap.Format.RGBA8888);
-        pix.setColor(Color.LIGHT_GRAY);
-        pix.fill();
-        texture = new Texture(pix);
-        polygonTextureRegion = new TextureRegion(texture);
-        triangulator = new EarClippingTriangulator();*/
-
         polygonSpriteBatch = new PolygonSpriteBatch();
 
 
@@ -184,19 +169,13 @@ public class PannoniaVoroi extends ApplicationAdapter {
 
         polygonSpriteBatch.begin();
         for (VoronoiCell voronoiCell : voronoiMapper.voronoiCellList) {
-            polygonSprite = new PolygonSprite(voronoiCell.getPolygonRegion());
-            /*if (polygonSprite == null) {
-                polygonSprite = new PolygonSprite(voronoiCell.getPolygonRegion());
-            } else {
-                polygonSprite.setRegion(voronoiCell.getPolygonRegion());
-            }*/
+            polygonSprite = voronoiCell.getPolygonSprite();
             polygonSprite.setColor(voronoiCell.getColor()); // felülírja pix colort
             polygonSprite.draw(polygonSpriteBatch);
         }
         polygonSpriteBatch.end();
 
         shapeRenderer.begin(ShapeRenderer.ShapeType.Line);
-
         //edgek
         shapeRenderer.setColor(Color.BLUE);
         for (VoronoiCell voronoiCell : voronoiMapper.getVoronoiCellList()) {
@@ -226,25 +205,25 @@ public class PannoniaVoroi extends ApplicationAdapter {
             shapeRenderer.circle(((float) point.x), ((float) point.y), 1);
         }*/
 
-      if (voroiInputHandler.islandCellList != null){
-          shapeRenderer.setColor(Color.BLACK);
-          for (VoronoiCell voronoiCell : voroiInputHandler.islandCellList) {
-              for (VoronoiCell neighbour : voronoiCell.getNeighbours()) {
-                  if (neighbour.getHeight() <= 0.2f){
-                      List<PointD> same = new ArrayList<>();
-                      for (PointD vertex : voronoiCell.getVertices()) {
-                          for (PointD neighbourVertex : neighbour.getVertices()) {
-                              if (vertex.equals(neighbourVertex)){
-                                  same.add(vertex);
-                              }
-                          }
-                      }
-                      shapeRenderer.rectLine(((float) same.get(0).x), ((float) same.get(0).y),
-                              ((float) same.get(1).x), ((float) same.get(1).y), 2);
-                  }
-              }
-          }
-      }
+        if (voroiInputHandler.islandCellList != null) {
+            shapeRenderer.setColor(Color.BLACK);
+            for (VoronoiCell voronoiCell : voroiInputHandler.islandCellList) {
+                for (VoronoiCell neighbour : voronoiCell.getNeighbours()) {
+                    if (neighbour.getHeight() <= 0.2f) {
+                        List<PointD> same = new ArrayList<>();
+                        for (PointD vertex : voronoiCell.getVertices()) {
+                            for (PointD neighbourVertex : neighbour.getVertices()) {
+                                if (vertex.equals(neighbourVertex)) {
+                                    same.add(vertex);
+                                }
+                            }
+                        }
+                        shapeRenderer.rectLine(((float) same.get(0).x), ((float) same.get(0).y),
+                                ((float) same.get(1).x), ((float) same.get(1).y), 2);
+                    }
+                }
+            }
+        }
 
         shapeRenderer.end();
     }

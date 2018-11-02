@@ -14,14 +14,18 @@ import org.kynosarges.tektosyne.geometry.PointD;
 import sun.plugin2.util.ColorUtil;
 
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Stream;
 
 public class VoronoiCell {
 
     @Getter
     private PointD site;
     @Getter
-    private List<VoronoiCell> neighbours;
+    private Set<VoronoiCell> neighbours;
     @Getter
     private List<LineD> edges;
     @Getter
@@ -31,7 +35,7 @@ public class VoronoiCell {
     @Getter
     private PointD[] verticesD;
     @Getter
-    List<PointD> neighborSites;
+    Set<PointD> neighborSites;
     @Getter
     @Setter
     private float height;
@@ -40,6 +44,8 @@ public class VoronoiCell {
     Color color;
     @Getter
     PolygonRegion polygonRegion;
+    @Getter
+    PolygonSprite polygonSprite;
 
     private static EarClippingTriangulator triangulator;
     private static Texture texture;
@@ -54,29 +60,38 @@ public class VoronoiCell {
         polygonTextureRegion = new TextureRegion(texture);
     }
 
-    public VoronoiCell(PointD site, List<LineD> edges, List<PointD> vertices, List<PointD> neighborSites, PointD[] verticesD) {
-        this.verticesD = verticesD;
+    public VoronoiCell(PointD site, PointD[] verteces) {
         this.site = site;
-        this.edges = edges;
-        this.vertices = vertices;
-        this.neighborSites = neighborSites;
-        neighbours = new ArrayList<>();
+        vertices = new ArrayList<>();
+        neighbours = new HashSet<>();
+        neighborSites = new HashSet<>();
+        edges = new ArrayList<>();
 
+        this.verticesD = verteces;
+        this.vertices = Arrays.asList(verteces);
         double[] doubles = PointD.toDoubles(verticesD);
         verticesF = new float[doubles.length];
         for (int i = 0; i < doubles.length; i++) {
             verticesF[i] = ((float) doubles[i]);
         }
-
-
         this.polygonRegion = new PolygonRegion(polygonTextureRegion, verticesF, triangulator.computeTriangles(verticesF).toArray());
 
         this.color = new Color(94f / 255, 79f / 255, 162f / 255, 1);
         this.height = 0;
+
+        polygonSprite = new PolygonSprite(polygonRegion);
     }
 
     public void addNeighbour(VoronoiCell neighbour) {
         neighbours.add(neighbour);
+    }
+
+    public void addNeighbourSite(PointD neighbourSite) {
+        neighborSites.add(neighbourSite);
+    }
+
+    public void addEdge(LineD edge) {
+        edges.add(edge);
     }
 
 }

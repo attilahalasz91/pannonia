@@ -92,7 +92,7 @@ public class VoroiInputHandler implements InputProcessor {
                 do {
                     height *= decrement;
                     VoronoiCell poll = queue.poll();
-                    List<VoronoiCell> neighbours = poll.getNeighbours();
+                    Set<VoronoiCell> neighbours = poll.getNeighbours();
                     for (VoronoiCell neighbour : neighbours) {
                         if (!usedSet.contains(neighbour)) {
                             newHeight = MathUtils.clamp(neighbour.getHeight() + height, 0, 1);
@@ -118,7 +118,7 @@ public class VoroiInputHandler implements InputProcessor {
                 do {
                     VoronoiCell poll = queue.poll();
                     height = poll.getHeight() * decrement;
-                    List<VoronoiCell> neighbours = poll.getNeighbours();
+                    Set<VoronoiCell> neighbours = poll.getNeighbours();
                     for (VoronoiCell neighbour : neighbours) {
                         if (!usedSet.contains(neighbour)) {
                             double mod = Math.random() * sharpness + 1.1f - sharpness;

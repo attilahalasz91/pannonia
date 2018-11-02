@@ -7,6 +7,7 @@ import org.joda.time.LocalDateTime;
 import org.kynosarges.tektosyne.geometry.LineD;
 import org.kynosarges.tektosyne.geometry.PointD;
 import org.kynosarges.tektosyne.geometry.Voronoi;
+import org.kynosarges.tektosyne.geometry.VoronoiEdge;
 import org.kynosarges.tektosyne.geometry.VoronoiResults;
 import org.kynosarges.tektosyne.subdivision.Subdivision;
 import org.kynosarges.tektosyne.subdivision.SubdivisionEdge;
@@ -26,62 +27,41 @@ public class VoronoiMapper {
     @Getter
     List<PointD> siteList;
     @Getter
-    Map<PointD, VoronoiCell> voronoiCellMap;
+    Map<Integer, VoronoiCell> voronoiCellMap;
     @Getter
     List<VoronoiCell> voronoiCellList;
-    @Getter
-    LineD[] delaunayEdges;
+   /* @Getter
+    LineD[] delaunayEdges;*/
 
     public VoronoiMapper(PointD[] sites) {
         voronoiCellMap = new HashMap<>();
         voronoiCellList = new ArrayList<>();
         siteList = Arrays.asList(sites);
 
-        voronoiResults = Voronoi.findAll(sites);Gdx.app.log("voronoiMapS", LocalDateTime.now().toString());
-        VoronoiMap voronoiMap = new VoronoiMap(voronoiResults);Gdx.app.log("voronoiMapE", LocalDateTime.now().toString());
-        Subdivision source = voronoiMap.source();
-        Gdx.app.log("delaunaySubdivisionS", LocalDateTime.now().toString());
-        Subdivision delaunaySubdivision = voronoiResults.toDelaunaySubdivision(true);
-        Gdx.app.log("delaunaySubdivisionE ", LocalDateTime.now().toString());
-        Gdx.app.log("iterate points start ", LocalDateTime.now().toString());
-        for (PointD site : sites) {
+        voronoiResults = Voronoi.findAll(sites);
 
-            //locate the face to this site on the planar subdivision graph
-            SubdivisionFace siteFace = source.findFace(site);
-
-            //one of the subdivision edge on the outer boundary of this subdivision face
-            SubdivisionEdge outerEdge = siteFace.outerEdge();
-
-            //cycle through this edge for the polygon vertices
-            PointD[] polygonVertices = outerEdge.cyclePolygon();
-            List<PointD> polygonVericesList = Arrays.asList(polygonVertices);
-
-            //all the edges of the polygon as lineD
-            List<LineD> polygonEdgesList = new ArrayList<>();
-            List<SubdivisionEdge> subdivisionEdges = outerEdge.cycleEdges();
-            for (SubdivisionEdge subdivisionEdge : subdivisionEdges) {
-                LineD polygonEdge = subdivisionEdge.toLine();
-                polygonEdgesList.add(polygonEdge);
-            }
-
-            //get the neighbour sites from the delunarySubdivision graph (because it's a graph from the sites)
-            List<PointD> neighborSitesList = delaunaySubdivision.getNeighbors(site);
-
-            VoronoiCell voronoiCell = new VoronoiCell(site, polygonEdgesList, polygonVericesList, neighborSitesList, polygonVertices);
-            voronoiCellMap.put(site, voronoiCell);
+        PointD[][] pointDS = voronoiResults.voronoiRegions();
+        for (int i = 0; i < pointDS.length; i++) {
+            VoronoiCell voronoiCell = new VoronoiCell(voronoiResults.generatorSites[i], pointDS[i]);//site, vertices
+            voronoiCellMap.put(i, voronoiCell);
             voronoiCellList.add(voronoiCell);
         }
-        Gdx.app.log("iterate pints end ", LocalDateTime.now().toString());
 
-        delaunayEdges = voronoiResults.delaunayEdges();
+        for (VoronoiEdge voronoiEdge : voronoiResults.voronoiEdges) {
+            int site1 = voronoiEdge.site1;
+            int site2 = voronoiEdge.site2;
+            VoronoiCell voronoiCell1 = getVoronoiCellMap().get(site1);
+            VoronoiCell voronoiCell2 = getVoronoiCellMap().get(site2);
 
-        for (VoronoiCell voronoiCell : voronoiCellList) {
-            for (PointD neighborSite : voronoiCell.getNeighborSites()) {
-                VoronoiCell voronoiNeighbour = voronoiCellMap.get(neighborSite);
-                voronoiCell.addNeighbour(voronoiNeighbour);
-            }
+            PointD vertex1Point = voronoiResults.voronoiVertices[voronoiEdge.vertex1];
+            PointD vertex2Point = voronoiResults.voronoiVertices[voronoiEdge.vertex2];
+            voronoiCell1.addNeighbourSite(voronoiResults.generatorSites[site2]);
+            voronoiCell1.addEdge(new LineD(vertex1Point.x, vertex1Point.y, vertex2Point.x, vertex2Point.y));
+            voronoiCell1.addNeighbour(voronoiCell2);
+            voronoiCell2.addNeighbourSite(voronoiResults.generatorSites[site1]);
+            voronoiCell2.addEdge(new LineD(vertex1Point.x, vertex1Point.y, vertex2Point.x, vertex2Point.y));
+            voronoiCell2.addNeighbour(voronoiCell1);
         }
-
     }
 
 }
