@@ -46,6 +46,8 @@ public class VoronoiCell {
     PolygonRegion polygonRegion;
     @Getter
     PolygonSprite polygonSprite;
+    @Getter
+    short[] triangles;
 
     private static EarClippingTriangulator triangulator;
     private static Texture texture;
@@ -53,11 +55,12 @@ public class VoronoiCell {
 
     static {
         Pixmap pix = new Pixmap(1, 1, Pixmap.Format.RGBA8888);
-        pix.setColor(Color.LIGHT_GRAY);
+        pix.setColor(Color.WHITE);
         pix.fill();
         triangulator = new EarClippingTriangulator();
         texture = new Texture(pix);
         polygonTextureRegion = new TextureRegion(texture);
+        pix.dispose();
     }
 
     public VoronoiCell(PointD site, PointD[] verteces) {
@@ -74,7 +77,9 @@ public class VoronoiCell {
         for (int i = 0; i < doubles.length; i++) {
             verticesF[i] = ((float) doubles[i]);
         }
-        this.polygonRegion = new PolygonRegion(polygonTextureRegion, verticesF, triangulator.computeTriangles(verticesF).toArray());
+
+        triangles = triangulator.computeTriangles(verticesF).toArray();
+        this.polygonRegion = new PolygonRegion(polygonTextureRegion, verticesF, triangles);
 
         this.color = new Color(94f / 255, 79f / 255, 162f / 255, 1);
         this.height = 0;

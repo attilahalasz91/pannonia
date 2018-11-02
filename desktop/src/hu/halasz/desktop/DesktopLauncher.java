@@ -2,7 +2,6 @@ package hu.halasz.desktop;
 
 import com.badlogic.gdx.backends.lwjgl.LwjglApplication;
 import com.badlogic.gdx.backends.lwjgl.LwjglApplicationConfiguration;
-import hu.halasz.Pannonia;
 import hu.halasz.PannoniaVoroi;
 
 public class DesktopLauncher {

@@ -5,35 +5,44 @@ import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.Colors;
 import com.badlogic.gdx.graphics.GL20;
+import com.badlogic.gdx.graphics.Mesh;
 import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.Pixmap;
 import com.badlogic.gdx.graphics.Texture;
+import com.badlogic.gdx.graphics.VertexAttribute;
+import com.badlogic.gdx.graphics.VertexAttributes;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.PolygonRegion;
 import com.badlogic.gdx.graphics.g2d.PolygonSprite;
 import com.badlogic.gdx.graphics.g2d.PolygonSpriteBatch;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
+import com.badlogic.gdx.graphics.glutils.ShaderProgram;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.math.EarClippingTriangulator;
 import com.badlogic.gdx.math.MathUtils;
+import com.badlogic.gdx.math.Polygon;
+import com.badlogic.gdx.utils.GdxRuntimeException;
 import hu.halasz.maploader.Pixel;
 import mikera.vectorz.Vector4;
+import org.apache.commons.lang.ArrayUtils;
 import org.joda.time.LocalDateTime;
 import org.joda.time.MutableDateTime;
 import org.kynosarges.tektosyne.geometry.GeoUtils;
 import org.kynosarges.tektosyne.geometry.LineD;
 import org.kynosarges.tektosyne.geometry.PointD;
 import org.kynosarges.tektosyne.geometry.RectD;
+import org.kynosarges.tektosyne.geometry.RegularPolygon;
 import org.kynosarges.tektosyne.geometry.Voronoi;
+import org.kynosarges.tektosyne.geometry.VoronoiEdge;
 import org.kynosarges.tektosyne.geometry.VoronoiResults;
-import org.kynosarges.tektosyne.subdivision.Subdivision;
 
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
 
@@ -51,25 +60,21 @@ public class PannoniaVoroi extends ApplicationAdapter {
     PointD[] pointDS;
 
     PointD[][] voronoiRegions;
-
-    Set<Pixel> borderPixels;
     ShapeRenderer shapeRenderer;
-    Subdivision source;
 
     VoronoiMapper voronoiMapper;
 
-    //Pixmap pix;
-    //EarClippingTriangulator triangulator;
-    // PolygonRegion polyReg;
     PolygonSpriteBatch polygonSpriteBatch;
     PolygonSprite polygonSprite;
- /*   Texture texture;
-    TextureRegion polygonTextureRegion;*/
 
-    BitmapFont font;
+
+    private BitmapFont font;
     private SpriteBatch batch;
-    MutableDateTime mutableDateTime;
+    private MutableDateTime mutableDateTime;
     float timer;
+
+    private ShaderProgram shaderProgram;
+    private Mesh mesh;
 
     @Override
     public void create() {
@@ -92,11 +97,9 @@ public class PannoniaVoroi extends ApplicationAdapter {
         for (int i = 0; i < p.size(); i++) {
             pointDS[i] = p.get(i);
         }*/
-        Gdx.app.log("point generation start: ", LocalDateTime.now().toString());
-
         //random points
+        Gdx.app.log("point generation start: ", LocalDateTime.now().toString());
         pointDS = GeoUtils.randomPoints(10000, new RectD(500, 1, MASK_BMP_WIDTH, MASK_BMP_HEIGHT));
-
         Gdx.app.log("point generation end: ", LocalDateTime.now().toString());
         Gdx.app.log("voronoi generation start: ", LocalDateTime.now().toString());
 
@@ -111,21 +114,20 @@ public class PannoniaVoroi extends ApplicationAdapter {
             pointDS[i] = pointD;
         }
         voronoiResults = Voronoi.findAll(pointDS);
-
         voronoiRegions = voronoiResults.voronoiRegions();
-
         Gdx.app.log("voronoi generation end with 1 lloyd: ", LocalDateTime.now().toString());
+
         Gdx.app.log("mapper start: ", LocalDateTime.now().toString());
         voronoiMapper = new VoronoiMapper(pointDS);
         Gdx.app.log("mapper end: ", LocalDateTime.now().toString());
 
         float w = Gdx.graphics.getWidth();
         float h = Gdx.graphics.getHeight();
-
         // Constructs a new OrthographicCamera, using the given viewport width and height
         // Height is multiplied by aspect ratio.
         cam = new OrthographicCamera(CAM_WORLD_WIDTH, CAM_WORLD_WIDTH * (h / w));
         cam.position.set(cam.viewportWidth / 2f, cam.viewportHeight / 2f, 0);
+        cam.setToOrtho(false);
         cam.update();
 
         voroiInputHandler = new VoroiInputHandler(cam, voronoiMapper.getVoronoiResults().voronoiRegions(), voronoiMapper);
@@ -144,46 +146,112 @@ public class PannoniaVoroi extends ApplicationAdapter {
 
         polygonSpriteBatch = new PolygonSpriteBatch();
 
+        List<Float> verticesWithColorList = new ArrayList<>();
+        for (VoronoiCell voronoiCell : voronoiMapper.getVoronoiCellList()) {
+            float colorR = voronoiCell.getColor().r;
+            float colorG = voronoiCell.getColor().g;
+            float colorB = voronoiCell.getColor().b;
+
+            short[] triangles = voronoiCell.getTriangles();
+            for (int j = 0; j < triangles.length; j++) {
+                verticesWithColorList.add((float)voronoiCell.getVerticesD()[triangles[j]].x);
+                verticesWithColorList.add((float)voronoiCell.getVerticesD()[triangles[j]].y);
+                verticesWithColorList.add(colorR);
+                verticesWithColorList.add(colorG);
+                verticesWithColorList.add(colorB);
+                verticesWithColorList.add(1f);
+            }
+
+        }
+
+        mesh = new Mesh(true, verticesWithColorList.size(), 0,
+                new VertexAttribute(VertexAttributes.Usage.Position, 2, "a_position"),
+                new VertexAttribute(VertexAttributes.Usage.ColorUnpacked, 4, "a_color"));
+
+        float[] vertices = ArrayUtils.toPrimitive(verticesWithColorList.toArray(new Float[verticesWithColorList.size()]));
+        mesh.setVertices(vertices);
+
+        String vertexShader = "//our attributes\n" +
+                "attribute vec2 a_position;\n" +
+                "attribute vec4 a_color;\n" +
+                "\n" +
+                "//our camera matrix\n" +
+                "uniform mat4 u_projTrans;\n" +
+                "\n" +
+                "//send the color out to the fragment shader\n" +
+                "varying vec4 vColor;\n" +
+                "\n" +
+                "void main() {\n" +
+                "\tvColor = a_color;\n" +
+                "\tgl_Position = u_projTrans * vec4(a_position.xy, 0.0, 1.0);\n" +
+                "}" ;
+        String fragmentShader = "#ifdef GL_ES\n" +
+                "precision mediump float;\n" +
+                "#endif\n" +
+                "\n" +
+                "//input from vertex shader\n" +
+                "varying vec4 vColor;\n" +
+                "\n" +
+                "void main() {\n" +
+                "\tgl_FragColor = vColor;\n" +
+                "}";
+
+        ShaderProgram.pedantic = false;
+        shaderProgram = new ShaderProgram(vertexShader, fragmentShader);
+        String log = shaderProgram.getLog();
+        if (!shaderProgram.isCompiled())
+            throw new GdxRuntimeException(log);
+        if (log!=null && log.length()!=0)
+            System.out.println("Shader Log: "+log);
 
     }
 
     @Override
     public void render() {
+        long start = System.currentTimeMillis();
+        Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
+        //no need for depth...
+        Gdx.gl.glDepthMask(false);
+        //enable blending, for alpha
+        Gdx.gl.glEnable(GL20.GL_BLEND);
+        Gdx.gl.glBlendFunc(GL20.GL_SRC_ALPHA, GL20.GL_ONE_MINUS_SRC_ALPHA);
+
+        shapeRenderer.setProjectionMatrix(cam.combined);
+        polygonSpriteBatch.setProjectionMatrix(cam.combined);
+        batch.setProjectionMatrix(cam.combined);
+
+        mapScrollWatcher();
+        handleInput();
+        cam.update();
+
         timer += Gdx.graphics.getRawDeltaTime();
         if (timer > 0.5f) {
             mutableDateTime.addHours(1);
             timer = 0;
         }
-        mapScrollWatcher();
-        handleInput();
-        cam.update();
-        shapeRenderer.setProjectionMatrix(cam.combined);
-        polygonSpriteBatch.setProjectionMatrix(cam.combined);
-        batch.setProjectionMatrix(cam.combined);
-        Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
 
         batch.begin();
         font.draw(batch, mutableDateTime.toString(), 100, 100);
         font.draw(batch, "FPS: " + Gdx.graphics.getFramesPerSecond(), 100, 300);
+        font.draw(batch, "CAM ZOOM: " + cam.zoom, 100, 150);
         batch.end();
 
-        polygonSpriteBatch.begin();
-        for (VoronoiCell voronoiCell : voronoiMapper.voronoiCellList) {
-            polygonSprite = voronoiCell.getPolygonSprite();
-            polygonSprite.setColor(voronoiCell.getColor()); // felülírja pix colort
-            polygonSprite.draw(polygonSpriteBatch);
-        }
-        polygonSpriteBatch.end();
+        shaderProgram.begin();
+        //update the projection matrix so our triangles are rendered in 2D
+        shaderProgram.setUniformMatrix("u_projTrans", cam.combined);
+        mesh.render(shaderProgram, GL20.GL_TRIANGLES);
+        shaderProgram.end();
 
         shapeRenderer.begin(ShapeRenderer.ShapeType.Line);
+        // if (cam.zoom < 2.5f){
         //edgek
         shapeRenderer.setColor(Color.BLUE);
-        for (VoronoiCell voronoiCell : voronoiMapper.getVoronoiCellList()) {
-            List<LineD> edges = voronoiCell.getEdges();
-            for (LineD lineD : edges) {
-                shapeRenderer.line(((float) lineD.start.x), ((float) lineD.start.y), ((float) lineD.end.x), ((float) lineD.end.y));
-            }
+        PointD[] voronoiVertices = voronoiMapper.voronoiResults.voronoiVertices;
+        for (VoronoiEdge voronoiEdge : voronoiMapper.voronoiResults.voronoiEdges) {
+            shapeRenderer.line(((float) voronoiVertices[voronoiEdge.vertex1].x), ((float) voronoiVertices[voronoiEdge.vertex1].y),
+                    ((float) voronoiVertices[voronoiEdge.vertex2].x), ((float) voronoiVertices[voronoiEdge.vertex2].y));
         }
+        // }
 
         //selected
         if (voroiInputHandler.selectedEdges != null) {
@@ -226,6 +294,8 @@ public class PannoniaVoroi extends ApplicationAdapter {
         }
 
         shapeRenderer.end();
+
+        //System.out.println("render() took: " + (System.currentTimeMillis() - start) + "ms");
     }
 
     private int convertYCoordFromCoordSysYdownToYup(Pixel borderPixel) {
@@ -291,6 +361,8 @@ public class PannoniaVoroi extends ApplicationAdapter {
     @Override
     public void dispose() {
         shapeRenderer.dispose();
+        batch.dispose();
+        mesh.dispose();
     }
 
     @Override
