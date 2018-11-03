@@ -29,38 +29,28 @@ public class VoronoiCell {
     @Getter
     private List<LineD> edges;
     @Getter
-    private List<PointD> vertices;
+    private List<PointD> vertices;//kell?
     @Getter
     private float[] verticesF;
     @Getter
     private PointD[] verticesD;
     @Getter
-    Set<PointD> neighborSites;
+    private Set<PointD> neighborSites;
     @Getter
     @Setter
     private float height;
     @Getter
     @Setter
-    Color color;
+    private Color color;
     @Getter
-    PolygonRegion polygonRegion;
+    private short[] triangles;
     @Getter
-    PolygonSprite polygonSprite;
-    @Getter
-    short[] triangles;
+    private static int numOfTriangles;
 
     private static EarClippingTriangulator triangulator;
-    private static Texture texture;
-    private static TextureRegion polygonTextureRegion;
 
     static {
-        Pixmap pix = new Pixmap(1, 1, Pixmap.Format.RGBA8888);
-        pix.setColor(Color.WHITE);
-        pix.fill();
         triangulator = new EarClippingTriangulator();
-        texture = new Texture(pix);
-        polygonTextureRegion = new TextureRegion(texture);
-        pix.dispose();
     }
 
     public VoronoiCell(PointD site, PointD[] verteces) {
@@ -79,12 +69,10 @@ public class VoronoiCell {
         }
 
         triangles = triangulator.computeTriangles(verticesF).toArray();
-        this.polygonRegion = new PolygonRegion(polygonTextureRegion, verticesF, triangles);
+        numOfTriangles+=triangles.length;
 
         this.color = new Color(94f / 255, 79f / 255, 162f / 255, 1);
         this.height = 0;
-
-        polygonSprite = new PolygonSprite(polygonRegion);
     }
 
     public void addNeighbour(VoronoiCell neighbour) {

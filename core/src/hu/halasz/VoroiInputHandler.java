@@ -31,7 +31,7 @@ public class VoroiInputHandler implements InputProcessor {
     VoronoiMapper voronoiMapper;
     List<LineD> selectedEdges;
     VoronoiCell voronoiCell;
-    List<VoronoiCell> islandCellList;
+    static List<VoronoiCell> islandCellList;
 
     public VoroiInputHandler(OrthographicCamera cam, PointD[][] voronoiRegions, VoronoiMapper voronoiMapper) {
         this.cam = cam;
@@ -140,6 +140,7 @@ public class VoroiInputHandler implements InputProcessor {
                     islandCellList.add(cell);
                 }
             }
+            PannoniaVoroi.updateVerticiesColor();
         }
 
         return false;

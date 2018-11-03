@@ -27,9 +27,9 @@ public class VoronoiMapper {
     @Getter
     List<PointD> siteList;
     @Getter
-    Map<Integer, VoronoiCell> voronoiCellMap;
+    static Map<Integer, VoronoiCell> voronoiCellMap;
     @Getter
-    List<VoronoiCell> voronoiCellList;
+    static List<VoronoiCell> voronoiCellList;
    /* @Getter
     LineD[] delaunayEdges;*/
 

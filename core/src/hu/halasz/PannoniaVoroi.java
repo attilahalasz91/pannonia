@@ -44,7 +44,10 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 public class PannoniaVoroi extends ApplicationAdapter {
     static final int MASK_BMP_WIDTH = 1600;
@@ -74,7 +77,10 @@ public class PannoniaVoroi extends ApplicationAdapter {
     float timer;
 
     private ShaderProgram shaderProgram;
-    private Mesh mesh;
+    private static Mesh mesh;
+    private static float[] vertices;
+    private static Mesh mesh2;
+    private static float[] voronoiEdges;
 
     @Override
     public void create() {
@@ -146,29 +152,30 @@ public class PannoniaVoroi extends ApplicationAdapter {
 
         polygonSpriteBatch = new PolygonSpriteBatch();
 
-        List<Float> verticesWithColorList = new ArrayList<>();
-        for (VoronoiCell voronoiCell : voronoiMapper.getVoronoiCellList()) {
+        vertices = new float[VoronoiCell.getNumOfTriangles()*6];
+        int i = 0;
+        for (VoronoiCell voronoiCell : VoronoiMapper.getVoronoiCellList()) {
             float colorR = voronoiCell.getColor().r;
             float colorG = voronoiCell.getColor().g;
             float colorB = voronoiCell.getColor().b;
 
             short[] triangles = voronoiCell.getTriangles();
             for (int j = 0; j < triangles.length; j++) {
-                verticesWithColorList.add((float)voronoiCell.getVerticesD()[triangles[j]].x);
-                verticesWithColorList.add((float)voronoiCell.getVerticesD()[triangles[j]].y);
-                verticesWithColorList.add(colorR);
-                verticesWithColorList.add(colorG);
-                verticesWithColorList.add(colorB);
-                verticesWithColorList.add(1f);
+                vertices[i] = (float) voronoiCell.getVerticesD()[triangles[j]].x;
+                vertices[i + 1] = (float) voronoiCell.getVerticesD()[triangles[j]].y;
+                vertices[i + 2] = colorR;
+                vertices[i + 3] = colorG;
+                vertices[i + 4] = colorB;
+                vertices[i + 5] = 1f;
+                i += 6;
             }
 
         }
 
-        mesh = new Mesh(true, verticesWithColorList.size(), 0,
+        mesh = new Mesh(true, vertices.length, 0,
                 new VertexAttribute(VertexAttributes.Usage.Position, 2, "a_position"),
                 new VertexAttribute(VertexAttributes.Usage.ColorUnpacked, 4, "a_color"));
 
-        float[] vertices = ArrayUtils.toPrimitive(verticesWithColorList.toArray(new Float[verticesWithColorList.size()]));
         mesh.setVertices(vertices);
 
         String vertexShader = "//our attributes\n" +
@@ -184,7 +191,7 @@ public class PannoniaVoroi extends ApplicationAdapter {
                 "void main() {\n" +
                 "\tvColor = a_color;\n" +
                 "\tgl_Position = u_projTrans * vec4(a_position.xy, 0.0, 1.0);\n" +
-                "}" ;
+                "}";
         String fragmentShader = "#ifdef GL_ES\n" +
                 "precision mediump float;\n" +
                 "#endif\n" +
@@ -201,9 +208,64 @@ public class PannoniaVoroi extends ApplicationAdapter {
         String log = shaderProgram.getLog();
         if (!shaderProgram.isCompiled())
             throw new GdxRuntimeException(log);
-        if (log!=null && log.length()!=0)
-            System.out.println("Shader Log: "+log);
+        if (log != null && log.length() != 0)
+            System.out.println("Shader Log: " + log);
 
+        voronoiEdges = new float[voronoiMapper.getVoronoiResults().voronoiEdges.length * 12];
+        i = 0;
+        for (VoronoiEdge voronoiEdge : voronoiMapper.getVoronoiResults().voronoiEdges) {
+            float x = (float) voronoiMapper.getVoronoiResults().voronoiVertices[voronoiEdge.vertex1].x;
+            float y = (float) voronoiMapper.getVoronoiResults().voronoiVertices[voronoiEdge.vertex1].y;
+            float x2 = (float) voronoiMapper.getVoronoiResults().voronoiVertices[voronoiEdge.vertex2].x;
+            float y2 = (float) voronoiMapper.getVoronoiResults().voronoiVertices[voronoiEdge.vertex2].y;
+            Color blue = Color.BLUE;
+
+            voronoiEdges[i] = x;
+            voronoiEdges[i + 1] = y;
+            voronoiEdges[i + 2] = blue.r;
+            voronoiEdges[i + 3] = blue.g;
+            voronoiEdges[i + 4] = blue.b;
+            voronoiEdges[i + 5] = blue.a;
+
+            voronoiEdges[i + 6] = x2;
+            voronoiEdges[i + 7] = y2;
+            voronoiEdges[i + 8] = blue.r;
+            voronoiEdges[i + 9] = blue.g;
+            voronoiEdges[i + 10] = blue.b;
+            voronoiEdges[i + 11] = blue.a;
+
+            i += 12;
+        }
+
+        mesh2 = new Mesh(true, voronoiEdges.length, 0,
+                new VertexAttribute(VertexAttributes.Usage.Position, 2, "a_position"),
+                new VertexAttribute(VertexAttributes.Usage.ColorUnpacked, 4, "a_color"));
+
+        mesh2.setVertices(voronoiEdges);
+
+    }
+
+    public static void updateVerticiesColor() {
+        //TODO: csak változott cellákon végigmenni
+        List<Float> verticesWithColorList = new ArrayList<>();
+        for (VoronoiCell voronoiCell : VoronoiMapper.getVoronoiCellList()) {
+            float colorR = voronoiCell.getColor().r;
+            float colorG = voronoiCell.getColor().g;
+            float colorB = voronoiCell.getColor().b;
+
+            short[] triangles = voronoiCell.getTriangles();
+            for (int j = 0; j < triangles.length; j++) {
+                verticesWithColorList.add((float) voronoiCell.getVerticesD()[triangles[j]].x);
+                verticesWithColorList.add((float) voronoiCell.getVerticesD()[triangles[j]].y);
+                verticesWithColorList.add(colorR);
+                verticesWithColorList.add(colorG);
+                verticesWithColorList.add(colorB);
+                verticesWithColorList.add(1f);
+            }
+
+        }
+        vertices = ArrayUtils.toPrimitive(verticesWithColorList.toArray(new Float[verticesWithColorList.size()]));
+        mesh.setVertices(vertices);
     }
 
     @Override
@@ -216,10 +278,6 @@ public class PannoniaVoroi extends ApplicationAdapter {
         Gdx.gl.glEnable(GL20.GL_BLEND);
         Gdx.gl.glBlendFunc(GL20.GL_SRC_ALPHA, GL20.GL_ONE_MINUS_SRC_ALPHA);
 
-        shapeRenderer.setProjectionMatrix(cam.combined);
-        polygonSpriteBatch.setProjectionMatrix(cam.combined);
-        batch.setProjectionMatrix(cam.combined);
-
         mapScrollWatcher();
         handleInput();
         cam.update();
@@ -231,6 +289,7 @@ public class PannoniaVoroi extends ApplicationAdapter {
         }
 
         batch.begin();
+        batch.setProjectionMatrix(cam.combined);
         font.draw(batch, mutableDateTime.toString(), 100, 100);
         font.draw(batch, "FPS: " + Gdx.graphics.getFramesPerSecond(), 100, 300);
         font.draw(batch, "CAM ZOOM: " + cam.zoom, 100, 150);
@@ -239,18 +298,17 @@ public class PannoniaVoroi extends ApplicationAdapter {
         shaderProgram.begin();
         //update the projection matrix so our triangles are rendered in 2D
         shaderProgram.setUniformMatrix("u_projTrans", cam.combined);
+        //polygons
         mesh.render(shaderProgram, GL20.GL_TRIANGLES);
+        //edges
+        mesh2.render(shaderProgram, GL20.GL_LINES);
         shaderProgram.end();
 
         shapeRenderer.begin(ShapeRenderer.ShapeType.Line);
+        shapeRenderer.setProjectionMatrix(cam.combined);
         // if (cam.zoom < 2.5f){
-        //edgek
-        shapeRenderer.setColor(Color.BLUE);
-        PointD[] voronoiVertices = voronoiMapper.voronoiResults.voronoiVertices;
-        for (VoronoiEdge voronoiEdge : voronoiMapper.voronoiResults.voronoiEdges) {
-            shapeRenderer.line(((float) voronoiVertices[voronoiEdge.vertex1].x), ((float) voronoiVertices[voronoiEdge.vertex1].y),
-                    ((float) voronoiVertices[voronoiEdge.vertex2].x), ((float) voronoiVertices[voronoiEdge.vertex2].y));
-        }
+
+
         // }
 
         //selected
