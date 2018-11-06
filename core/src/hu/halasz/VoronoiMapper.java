@@ -4,6 +4,7 @@ import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.math.EarClippingTriangulator;
 import lombok.Getter;
 import org.joda.time.LocalDateTime;
+import org.kynosarges.tektosyne.geometry.GeoUtils;
 import org.kynosarges.tektosyne.geometry.LineD;
 import org.kynosarges.tektosyne.geometry.PointD;
 import org.kynosarges.tektosyne.geometry.Voronoi;
@@ -36,11 +37,23 @@ public class VoronoiMapper {
     public VoronoiMapper(PointD[] sites) {
         voronoiCellMap = new HashMap<>();
         voronoiCellList = new ArrayList<>();
-        siteList = Arrays.asList(sites);
 
         voronoiResults = Voronoi.findAll(sites);
 
+        //Lloyd relaxation - 1 iteration - to spread out the points more evenly
         PointD[][] pointDS = voronoiResults.voronoiRegions();
+        PointD[] voronoiRegion;
+        PointD pointD;
+        for (int i = 0; i < pointDS.length; i++) {
+            voronoiRegion = pointDS[i];
+            pointD = GeoUtils.polygonCentroid(voronoiRegion);
+            sites[i] = pointD;
+        }
+        voronoiResults = Voronoi.findAll(sites);
+
+        siteList = Arrays.asList(sites);
+
+        pointDS = voronoiResults.voronoiRegions();
         for (int i = 0; i < pointDS.length; i++) {
             VoronoiCell voronoiCell = new VoronoiCell(voronoiResults.generatorSites[i], pointDS[i]);//site, vertices
             voronoiCellMap.put(i, voronoiCell);
@@ -62,6 +75,10 @@ public class VoronoiMapper {
             voronoiCell2.addEdge(new LineD(vertex1Point.x, vertex1Point.y, vertex2Point.x, vertex2Point.y));
             voronoiCell2.addNeighbour(voronoiCell1);
         }
+    }
+
+    private void lloydRelaxation(){
+
     }
 
 }

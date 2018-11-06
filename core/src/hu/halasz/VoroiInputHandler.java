@@ -64,6 +64,7 @@ public class VoroiInputHandler implements InputProcessor {
         Vector3 tp = getMousePosInGameWorld();
         Gdx.app.log("eger: ", tp.x + " " + tp.y);
 
+        //select a cell
         List<VoronoiCell> voronoiCellList = voronoiMapper.getVoronoiCellList();
         for (VoronoiCell voronoiCell : voronoiCellList) {
             PointD[] verticesD = voronoiCell.getVerticesD();

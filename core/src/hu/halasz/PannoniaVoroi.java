@@ -59,17 +59,9 @@ public class PannoniaVoroi extends ApplicationAdapter {
 
     private OrthographicCamera cam;
     VoroiInputHandler voroiInputHandler;
-    VoronoiResults voronoiResults;
     PointD[] pointDS;
-
-    PointD[][] voronoiRegions;
     ShapeRenderer shapeRenderer;
-
     VoronoiMapper voronoiMapper;
-
-    PolygonSpriteBatch polygonSpriteBatch;
-    PolygonSprite polygonSprite;
-
 
     private BitmapFont font;
     private SpriteBatch batch;
@@ -104,24 +96,7 @@ public class PannoniaVoroi extends ApplicationAdapter {
             pointDS[i] = p.get(i);
         }*/
         //random points
-        Gdx.app.log("point generation start: ", LocalDateTime.now().toString());
         pointDS = GeoUtils.randomPoints(10000, new RectD(500, 1, MASK_BMP_WIDTH, MASK_BMP_HEIGHT));
-        Gdx.app.log("point generation end: ", LocalDateTime.now().toString());
-        Gdx.app.log("voronoi generation start: ", LocalDateTime.now().toString());
-
-        voronoiResults = Voronoi.findAll(pointDS);
-        voronoiRegions = voronoiResults.voronoiRegions();
-
-        //Lloyd relaxation - 1 iteration - to spread out the points more evenly
-        pointDS = new PointD[pointDS.length];
-        for (int i = 0; i < voronoiRegions.length; i++) {
-            PointD[] voronoiRegion = voronoiRegions[i];
-            PointD pointD = GeoUtils.polygonCentroid(voronoiRegion);
-            pointDS[i] = pointD;
-        }
-        voronoiResults = Voronoi.findAll(pointDS);
-        voronoiRegions = voronoiResults.voronoiRegions();
-        Gdx.app.log("voronoi generation end with 1 lloyd: ", LocalDateTime.now().toString());
 
         Gdx.app.log("mapper start: ", LocalDateTime.now().toString());
         voronoiMapper = new VoronoiMapper(pointDS);
@@ -149,8 +124,6 @@ public class PannoniaVoroi extends ApplicationAdapter {
         mutableDateTime = new MutableDateTime(
                 888, 12, 11, 1, 1, 1, 1);
         timer = 0;
-
-        polygonSpriteBatch = new PolygonSpriteBatch();
 
         vertices = new float[VoronoiCell.getNumOfTriangles()*6];
         int i = 0;
