@@ -64,6 +64,7 @@ public class PannoniaVoroi extends ApplicationAdapter {
     VoronoiMapper voronoiMapper;
 
     private BitmapFont font;
+    private Pixmap spectralPalette;
     private SpriteBatch batch;
     private MutableDateTime mutableDateTime;
     float timer;
@@ -111,7 +112,8 @@ public class PannoniaVoroi extends ApplicationAdapter {
         cam.setToOrtho(false);
         cam.update();
 
-        voroiInputHandler = new VoroiInputHandler(cam, voronoiMapper.getVoronoiResults().voronoiRegions(), voronoiMapper);
+        spectralPalette = new Pixmap(Gdx.files.internal("Spectral.png"));
+        voroiInputHandler = new VoroiInputHandler(cam, voronoiMapper.getVoronoiResults().voronoiRegions(), voronoiMapper, spectralPalette);
         Gdx.input.setInputProcessor(voroiInputHandler);
 
         shapeRenderer = new ShapeRenderer();
@@ -394,6 +396,7 @@ public class PannoniaVoroi extends ApplicationAdapter {
         shapeRenderer.dispose();
         batch.dispose();
         mesh.dispose();
+        spectralPalette.dispose();
     }
 
     @Override

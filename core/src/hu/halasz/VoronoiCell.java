@@ -71,7 +71,7 @@ public class VoronoiCell {
         triangles = triangulator.computeTriangles(verticesF).toArray();
         numOfTriangles+=triangles.length;
 
-        this.color = new Color(94f / 255, 79f / 255, 162f / 255, 1);
+        this.color = new Color().set(1582277375);
         this.height = 0;
     }
 

@@ -4,6 +4,7 @@ import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.InputProcessor;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.OrthographicCamera;
+import com.badlogic.gdx.graphics.Pixmap;
 import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.math.Vector3;
 import mikera.vectorz.Vector4;
@@ -32,11 +33,14 @@ public class VoroiInputHandler implements InputProcessor {
     List<LineD> selectedEdges;
     VoronoiCell voronoiCell;
     static List<VoronoiCell> islandCellList;
+    private Pixmap spectralPalette;
 
-    public VoroiInputHandler(OrthographicCamera cam, PointD[][] voronoiRegions, VoronoiMapper voronoiMapper) {
+
+    public VoroiInputHandler(OrthographicCamera cam, PointD[][] voronoiRegions, VoronoiMapper voronoiMapper, Pixmap spectralPalette) {
         this.cam = cam;
         this.voronoiRegions = voronoiRegions;
         this.voronoiMapper = voronoiMapper;
+        this.spectralPalette = spectralPalette;
     }
 
     @Override
@@ -85,7 +89,7 @@ public class VoroiInputHandler implements InputProcessor {
             if (button == 0) {
                 float newHeight = MathUtils.clamp(voronoiCell.getHeight() + height, 0, 1);
                 voronoiCell.setHeight(newHeight);
-                voronoiCell.setColor(interpolateHSV(color1, color2, newHeight));
+                voronoiCell.setColor(interpolate(1 - newHeight));
                 usedSet.add(voronoiCell);
 
                 Queue<VoronoiCell> queue = new ArrayDeque<>();
@@ -98,7 +102,7 @@ public class VoroiInputHandler implements InputProcessor {
                         if (!usedSet.contains(neighbour)) {
                             newHeight = MathUtils.clamp(neighbour.getHeight() + height, 0, 1);
                             neighbour.setHeight(newHeight);
-                            neighbour.setColor(interpolateHSV(color1, color2, newHeight));
+                            neighbour.setColor(interpolate(1 - newHeight));
                             usedSet.add(neighbour);
                             queue.offer(neighbour);
                         }
@@ -111,7 +115,7 @@ public class VoroiInputHandler implements InputProcessor {
                 height = 0.5f;
                 //float newHeight = MathUtils.clamp(voronoiCell.getHeight() + height, 0, 1);
                 voronoiCell.setHeight(height);
-                voronoiCell.setColor(interpolateHSV(color1, color2, height));
+                voronoiCell.setColor(interpolate(1 - height));
                 usedSet.add(voronoiCell);
 
                 Queue<VoronoiCell> queue = new ArrayDeque<>();
@@ -127,7 +131,7 @@ public class VoroiInputHandler implements InputProcessor {
                             //newHeight = MathUtils.clamp(neighbour.getHeight() + height, 0, 1);
                             float newHeight = neighbour.getHeight() + height * (float) mod;
                             neighbour.setHeight(newHeight);
-                            neighbour.setColor(interpolateHSV(color1, color2, newHeight));
+                            neighbour.setColor(interpolate(1 - newHeight));
                             usedSet.add(neighbour);
                             queue.offer(neighbour);
                         }
@@ -137,7 +141,7 @@ public class VoroiInputHandler implements InputProcessor {
 
             islandCellList = new ArrayList<>();
             for (VoronoiCell cell : voronoiCellList) {
-                if (cell.getHeight() > 0.2f){
+                if (cell.getHeight() > 0.2f) {
                     islandCellList.add(cell);
                 }
             }
@@ -145,6 +149,16 @@ public class VoroiInputHandler implements InputProcessor {
         }
 
         return false;
+    }
+
+    private Color interpolate(float xn) {
+        int y1 = 0;
+        int y2 = 888;
+        int x1 = 0;
+        int x2 = 1;
+        int yn = (int) (((xn - x1) / (x2 - x1)) * (y2 - y1) + y1);
+
+        return new Color().set(spectralPalette.getPixel(yn, 0));
     }
 
     private Color interpolateHSV(Color color1, Color color2, float fraction) {
