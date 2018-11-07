@@ -124,10 +124,15 @@ public class VoroiInputHandler implements InputProcessor {
                     Set<VoronoiCell> neighbours = poll.getNeighbours();
                     for (VoronoiCell neighbour : neighbours) {
                         if (!usedSet.contains(neighbour)) {
-                            double mod = Math.random() * sharpness + 1.1f - sharpness;
-                            // if sharpness is 0 modifier should be ignored (=1)
-                            //newHeight = MathUtils.clamp(neighbour.getHeight() + height, 0, 1);
-                            float newHeight = neighbour.getHeight() + height * (float) mod;
+                            float newHeight;
+                            if (neighbour.getHeight() < 0.2){
+                                double mod = Math.random() * sharpness + 1.1f - sharpness;
+                                // if sharpness is 0 modifier should be ignored (=1)
+                                newHeight = height * (float) mod;
+                            }else{
+                                newHeight = neighbour.getHeight();
+                            }
+                            //newHeight = MathUtils.clamp(newHeight, 0, 1);
                             neighbour.setHeight(newHeight);
                             neighbour.setColor(interpolate(1 - newHeight));
                             usedSet.add(neighbour);

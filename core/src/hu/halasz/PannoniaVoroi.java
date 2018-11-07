@@ -148,30 +148,6 @@ public class PannoniaVoroi extends ApplicationAdapter {
 
         /*String vertexShader = "//our attributes\n" +
                 "attribute vec2 a_position;\n" +
-                "attribute vec4 a_color;\n" +
-                "\n" +
-                "//our camera matrix\n" +
-                "uniform mat4 u_projTrans;\n" +
-                "\n" +
-                "//send the color out to the fragment shader\n" +
-                "varying vec4 vColor;\n" +
-                "\n" +
-                "void main() {\n" +
-                "\tvColor = a_color;\n" +
-                "\tgl_Position = u_projTrans * vec4(a_position.xy, 0.0, 1.0);\n" +
-                "}";
-        String fragmentShader = "#ifdef GL_ES\n" +
-                "precision mediump float;\n" +
-                "#endif\n" +
-                "\n" +
-                "//input from vertex shader\n" +
-                "varying vec4 vColor;\n" +
-                "\n" +
-                "void main() {\n" +
-                "\tgl_FragColor = vColor;\n" +
-                "}";*/
-        String vertexShader = "//our attributes\n" +
-                "attribute vec2 a_position;\n" +
                 "attribute float a_color;\n" +
                 "\n" +
                 "//our camera matrix\n" +
@@ -198,8 +174,36 @@ public class PannoniaVoroi extends ApplicationAdapter {
                 "float gValue = ((value & 0x0000ff00) >> 8) / 255.0;\n" +
                 "float bValue = ((value & 0x000000ff)) / 255.0;\n" +
                 "gl_FragColor = vec4(rValue, gValue, bValue, 1.0);" +
+                "}";*/
+        String vertexShader = "//our attributes\n" +
+                "attribute vec2 a_position;\n" +
+                "attribute float a_color;\n" +
+                "\n" +
+                "//our camera matrix\n" +
+                "uniform mat4 u_projTrans;\n" +
+                "\n" +
+                "//send the color out to the fragment shader\n" +
+                "varying vec4 vColor;\n" +
+                "\n" +
+                "void main() {\n" +
+                "int value = int(a_color);\n" +
+                "float rValue = ((value & 0x00ff0000) >> 16) / 255.0;\n" +
+                "float gValue = ((value & 0x0000ff00) >> 8) / 255.0;\n" +
+                "float bValue = ((value & 0x000000ff)) / 255.0;\n" +
+                "    vColor = vec4(rValue, gValue, bValue, 1.0);\n" +
+                "    gl_Position = u_projTrans * vec4(a_position.xy, 0.0, 1.0);\n" +
                 "}";
-
+        String fragmentShader = " #version 130\n" +
+                "#ifdef GL_ES\n" +
+                "precision mediump float;\n" +
+                "#endif\n" +
+                "\n" +
+                "//input from vertex shader\n" +
+                "varying vec4 vColor;\n" +
+                "\n" +
+                "void main() {\n" +
+                "gl_FragColor = vColor;" +
+                "}";
 
         ShaderProgram.pedantic = false;
         shaderProgram = new ShaderProgram(vertexShader, fragmentShader);
@@ -338,7 +342,7 @@ public class PannoniaVoroi extends ApplicationAdapter {
 
         shapeRenderer.end();
 
-        System.out.println("render() took: " + (System.currentTimeMillis() - start) + "ms");
+        //System.out.println("render() took: " + (System.currentTimeMillis() - start) + "ms");
     }
 
     private int convertYCoordFromCoordSysYdownToYup(Pixel borderPixel) {
