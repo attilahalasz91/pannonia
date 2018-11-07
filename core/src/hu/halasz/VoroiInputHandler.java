@@ -17,15 +17,15 @@ import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
-import java.util.PriorityQueue;
 import java.util.Queue;
 import java.util.Set;
-import java.util.concurrent.ConcurrentLinkedQueue;
 
 import static hu.halasz.PannoniaVoroi.WORLD_WIDTH;
 
 public class VoroiInputHandler implements InputProcessor {
     public static final float SCROLL_SPEED = 0.5f;
+    protected static final int LEFT_MOUSE_CLICK = 0;
+    protected static final int RIGHT_MOUSE_CLICK = 1;
     private OrthographicCamera cam;
     PointD[][] voronoiRegions;
     //PointD[] selectedRegion;
@@ -82,11 +82,9 @@ public class VoroiInputHandler implements InputProcessor {
         if (voronoiCell != null) {
             float height = 0.2f;
             float decrement = 0.99f;
-            Color color1 = new Color(94f / 255, 79f / 255, 162f / 255, 1);
-            Color color2 = Color.RED;
             Set<VoronoiCell> usedSet = new HashSet<>(); //clear és kiemel majd másik classban
 
-            if (button == 0) {
+            if (button == LEFT_MOUSE_CLICK) {
                 float newHeight = MathUtils.clamp(voronoiCell.getHeight() + height, 0, 1);
                 voronoiCell.setHeight(newHeight);
                 voronoiCell.setColor(interpolate(1 - newHeight));
@@ -110,7 +108,7 @@ public class VoroiInputHandler implements InputProcessor {
                 } while (height > 0.01 && queue.size() > 0);
             }
 
-            if (button == 1) {
+            if (button == RIGHT_MOUSE_CLICK) {
                 float sharpness = 0.3f;
                 height = 0.5f;
                 //float newHeight = MathUtils.clamp(voronoiCell.getHeight() + height, 0, 1);
@@ -159,18 +157,6 @@ public class VoroiInputHandler implements InputProcessor {
         int yn = (int) (((xn - x1) / (x2 - x1)) * (y2 - y1) + y1);
 
         return new Color().set(spectralPalette.getPixel(yn, 0));
-    }
-
-    private Color interpolateHSV(Color color1, Color color2, float fraction) {
-        float[] color1HsvValues = new float[3];
-        float[] color2HsvValues = new float[3];
-        color1.toHsv(color1HsvValues);
-        color2.toHsv(color2HsvValues);
-        Vector4 vector4 = Vector4.of(color1HsvValues[0], color1HsvValues[1], color1HsvValues[2], color1.a);
-        vector4.interpolate(new Vector4(color2HsvValues[0], color2HsvValues[1], color2HsvValues[2], color2.a), fraction);
-
-        return new Color(1, 1, 1, (float) vector4.t).fromHsv(
-                (float) vector4.x, (float) vector4.y, (float) vector4.z);
     }
 
     @Override

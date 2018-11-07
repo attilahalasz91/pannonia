@@ -1,24 +1,17 @@
 package hu.halasz;
 
 import com.badlogic.gdx.graphics.Color;
-import com.badlogic.gdx.graphics.Pixmap;
-import com.badlogic.gdx.graphics.Texture;
-import com.badlogic.gdx.graphics.g2d.PolygonRegion;
-import com.badlogic.gdx.graphics.g2d.PolygonSprite;
-import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.math.EarClippingTriangulator;
 import lombok.Getter;
 import lombok.Setter;
 import org.kynosarges.tektosyne.geometry.LineD;
 import org.kynosarges.tektosyne.geometry.PointD;
-import sun.plugin2.util.ColorUtil;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.stream.Stream;
 
 public class VoronoiCell {
 
@@ -69,7 +62,7 @@ public class VoronoiCell {
         }
 
         triangles = triangulator.computeTriangles(verticesF).toArray();
-        numOfTriangles+=triangles.length;
+        numOfTriangles += triangles.length;
 
         this.color = new Color().set(1582277375);
         this.height = 0;
