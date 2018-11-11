@@ -22,13 +22,11 @@ public class VoronoiCell {
     @Getter
     private List<LineD> edges;
     @Getter
-    private List<PointD> vertices;//kell?
-    @Getter
     private float[] verticesF;
     @Getter
     private PointD[] verticesD;
-    @Getter
-    private Set<PointD> neighborSites;
+    /*@Getter
+    private Set<PointD> neighborSites;*/
     @Getter
     @Setter
     private float height;
@@ -48,13 +46,11 @@ public class VoronoiCell {
 
     public VoronoiCell(PointD site, PointD[] verteces) {
         this.site = site;
-        vertices = new ArrayList<>();
         neighbours = new HashSet<>();
-        neighborSites = new HashSet<>();
+        //neighborSites = new HashSet<>();
         edges = new ArrayList<>();
 
         this.verticesD = verteces;
-        this.vertices = Arrays.asList(verteces);
         double[] doubles = PointD.toDoubles(verticesD);
         verticesF = new float[doubles.length];
         for (int i = 0; i < doubles.length; i++) {
@@ -72,9 +68,9 @@ public class VoronoiCell {
         neighbours.add(neighbour);
     }
 
-    public void addNeighbourSite(PointD neighbourSite) {
+   /* public void addNeighbourSite(PointD neighbourSite) {
         neighborSites.add(neighbourSite);
-    }
+    }*/
 
     public void addEdge(LineD edge) {
         edges.add(edge);

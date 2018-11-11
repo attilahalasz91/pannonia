@@ -32,15 +32,17 @@ public class VoroiInputHandler implements InputProcessor {
     VoronoiMapper voronoiMapper;
     List<LineD> selectedEdges;
     VoronoiCell voronoiCell;
-    static List<VoronoiCell> islandCellList;
+    //static List<VoronoiCell> islandCellList;
     private Pixmap spectralPalette;
+    MapGenerator mapGenerator;
 
 
-    public VoroiInputHandler(OrthographicCamera cam, PointD[][] voronoiRegions, VoronoiMapper voronoiMapper, Pixmap spectralPalette) {
+    public VoroiInputHandler(OrthographicCamera cam, PointD[][] voronoiRegions, VoronoiMapper voronoiMapper, Pixmap spectralPalette, MapGenerator mapGenerator) {
         this.cam = cam;
         this.voronoiRegions = voronoiRegions;
         this.voronoiMapper = voronoiMapper;
         this.spectralPalette = spectralPalette;
+        this.mapGenerator = mapGenerator;
     }
 
     @Override
@@ -69,99 +71,44 @@ public class VoroiInputHandler implements InputProcessor {
         Gdx.app.log("eger: ", tp.x + " " + tp.y);
 
         //select a cell
-        List<VoronoiCell> voronoiCellList = voronoiMapper.getVoronoiCellList();
-        for (VoronoiCell voronoiCell : voronoiCellList) {
-            PointD[] verticesD = voronoiCell.getVerticesD();
-            PolygonLocation polygonLocation = GeoUtils.pointInPolygon(new PointD(tp.x, tp.y), verticesD);
-            if (polygonLocation.equals(PolygonLocation.INSIDE)) {
-                selectedEdges = voronoiCell.getEdges();
-                this.voronoiCell = voronoiCell;
-            }
-        }
+        this.voronoiCell = getVoronoiCellByMouseLocation(tp);
 
         if (voronoiCell != null) {
-            float height = 0.2f;
             float decrement = 0.99f;
-            Set<VoronoiCell> usedSet = new HashSet<>(); //clear és kiemel majd másik classban
-
             if (button == LEFT_MOUSE_CLICK) {
-                float newHeight = MathUtils.clamp(voronoiCell.getHeight() + height, 0, 1);
-                voronoiCell.setHeight(newHeight);
-                voronoiCell.setColor(interpolate(1 - newHeight));
-                usedSet.add(voronoiCell);
-
-                Queue<VoronoiCell> queue = new ArrayDeque<>();
-                queue.offer(voronoiCell);
-                do {
-                    height *= decrement;
-                    VoronoiCell poll = queue.poll();
-                    Set<VoronoiCell> neighbours = poll.getNeighbours();
-                    for (VoronoiCell neighbour : neighbours) {
-                        if (!usedSet.contains(neighbour)) {
-                            newHeight = MathUtils.clamp(neighbour.getHeight() + height, 0, 1);
-                            neighbour.setHeight(newHeight);
-                            neighbour.setColor(interpolate(1 - newHeight));
-                            usedSet.add(neighbour);
-                            queue.offer(neighbour);
-                        }
-                    }
-                } while (height > 0.01 && queue.size() > 0);
+                float height = 0.2f;
+                mapGenerator.heightGeneration(height, decrement, voronoiCell);
             }
 
             if (button == RIGHT_MOUSE_CLICK) {
                 float sharpness = 0.3f;
-                height = 0.5f;
+                float height = 0.5f;
+                double landVsSeaBorder = 0.2;
                 //float newHeight = MathUtils.clamp(voronoiCell.getHeight() + height, 0, 1);
-                voronoiCell.setHeight(height);
-                voronoiCell.setColor(interpolate(1 - height));
-                usedSet.add(voronoiCell);
-
-                Queue<VoronoiCell> queue = new ArrayDeque<>();
-                queue.offer(voronoiCell);
-                do {
-                    VoronoiCell poll = queue.poll();
-                    height = poll.getHeight() * decrement;
-                    Set<VoronoiCell> neighbours = poll.getNeighbours();
-                    for (VoronoiCell neighbour : neighbours) {
-                        if (!usedSet.contains(neighbour)) {
-                            float newHeight;
-                            if (neighbour.getHeight() < 0.2){
-                                double mod = Math.random() * sharpness + 1.1f - sharpness;
-                                // if sharpness is 0 modifier should be ignored (=1)
-                                newHeight = height * (float) mod;
-                            }else{
-                                newHeight = neighbour.getHeight();
-                            }
-                            //newHeight = MathUtils.clamp(newHeight, 0, 1);
-                            neighbour.setHeight(newHeight);
-                            neighbour.setColor(interpolate(1 - newHeight));
-                            usedSet.add(neighbour);
-                            queue.offer(neighbour);
-                        }
-                    }
-                } while (height > 0.01 && queue.size() > 0);
+                mapGenerator.erosionHeightGeneration(height, decrement, sharpness, landVsSeaBorder, voronoiCell);
             }
 
-            islandCellList = new ArrayList<>();
-            for (VoronoiCell cell : voronoiCellList) {
-                if (cell.getHeight() > 0.2f) {
-                    islandCellList.add(cell);
-                }
-            }
+            mapGenerator.setLandSites();
             PannoniaVoroi.updateVerticiesColor();
+
         }
 
         return false;
     }
 
-    private Color interpolate(float xn) {
-        int y1 = 0;
-        int y2 = 888;
-        int x1 = 0;
-        int x2 = 1;
-        int yn = (int) (((xn - x1) / (x2 - x1)) * (y2 - y1) + y1);
 
-        return new Color().set(spectralPalette.getPixel(yn, 0));
+    private VoronoiCell getVoronoiCellByMouseLocation(Vector3 mouseCoordinate) {
+        VoronoiCell selectedVoronoiCell = null;
+        List<VoronoiCell> voronoiCellList = VoronoiMapper.getVoronoiCellList();
+        for (VoronoiCell voronoiCell : voronoiCellList) {
+            PointD[] verticesD = voronoiCell.getVerticesD();
+            PolygonLocation polygonLocation = GeoUtils.pointInPolygon(new PointD(mouseCoordinate.x, mouseCoordinate.y), verticesD);
+            if (polygonLocation.equals(PolygonLocation.INSIDE)) {
+                selectedEdges = voronoiCell.getEdges();
+                selectedVoronoiCell = voronoiCell;
+            }
+        }
+        return selectedVoronoiCell;
     }
 
     @Override

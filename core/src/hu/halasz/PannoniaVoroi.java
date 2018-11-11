@@ -17,10 +17,20 @@ import com.badlogic.gdx.graphics.g2d.PolygonSprite;
 import com.badlogic.gdx.graphics.g2d.PolygonSpriteBatch;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
+import com.badlogic.gdx.graphics.g3d.Material;
+import com.badlogic.gdx.graphics.g3d.Model;
+import com.badlogic.gdx.graphics.g3d.ModelBatch;
+import com.badlogic.gdx.graphics.g3d.ModelInstance;
+import com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute;
+import com.badlogic.gdx.graphics.g3d.model.data.ModelMaterial;
+import com.badlogic.gdx.graphics.g3d.utils.MeshPartBuilder;
+import com.badlogic.gdx.graphics.g3d.utils.ModelBuilder;
+import com.badlogic.gdx.graphics.g3d.utils.shapebuilders.CylinderShapeBuilder;
 import com.badlogic.gdx.graphics.glutils.ShaderProgram;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.math.EarClippingTriangulator;
 import com.badlogic.gdx.math.MathUtils;
+import com.badlogic.gdx.math.Matrix4;
 import com.badlogic.gdx.math.Polygon;
 import com.badlogic.gdx.utils.GdxRuntimeException;
 import hu.halasz.maploader.Pixel;
@@ -50,8 +60,8 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 public class PannoniaVoroi extends ApplicationAdapter {
-    static final int MASK_BMP_WIDTH = 1600;
-    static final int MASK_BMP_HEIGHT = 1079;
+    static final int MASK_BMP_WIDTH = 1600;//1600
+    static final int MASK_BMP_HEIGHT = 1079;//1079
     static final float MASK_TO_WORD_COORDINATE_RATE = 1f;
     static final int WORLD_WIDTH = MASK_BMP_WIDTH / (int) MASK_TO_WORD_COORDINATE_RATE;//160
     static final int WORLD_HEIGHT = Math.round(MASK_BMP_HEIGHT / MASK_TO_WORD_COORDINATE_RATE);//108
@@ -64,7 +74,7 @@ public class PannoniaVoroi extends ApplicationAdapter {
     VoronoiMapper voronoiMapper;
 
     private BitmapFont font;
-    private Pixmap spectralPalette;
+    public static Pixmap spectralPalette;
     private SpriteBatch batch;
     private MutableDateTime mutableDateTime;
     float timer;
@@ -74,9 +84,12 @@ public class PannoniaVoroi extends ApplicationAdapter {
     private static float[] vertices;
     private static Mesh mesh2;
     private static float[] voronoiEdges;
+    private MapGenerator mapGenerator;
 
     @Override
     public void create() {
+        spectralPalette = new Pixmap(Gdx.files.internal("Spectral.png"));
+        mapGenerator = new MapGenerator(WORLD_WIDTH, WORLD_HEIGHT);
         /*BufferedImage image = null;
         try {
             image = ImageIO.read(new File("sic.bmp"));
@@ -100,7 +113,7 @@ public class PannoniaVoroi extends ApplicationAdapter {
         pointDS = GeoUtils.randomPoints(10000, new RectD(500, 1, MASK_BMP_WIDTH, MASK_BMP_HEIGHT));
 
         Gdx.app.log("mapper start: ", LocalDateTime.now().toString());
-        voronoiMapper = new VoronoiMapper(pointDS);
+        voronoiMapper = new VoronoiMapper(pointDS, mapGenerator);
         Gdx.app.log("mapper end: ", LocalDateTime.now().toString());
 
         float w = Gdx.graphics.getWidth();
@@ -113,7 +126,7 @@ public class PannoniaVoroi extends ApplicationAdapter {
         cam.update();
 
         spectralPalette = new Pixmap(Gdx.files.internal("Spectral.png"));
-        voroiInputHandler = new VoroiInputHandler(cam, voronoiMapper.getVoronoiResults().voronoiRegions(), voronoiMapper, spectralPalette);
+        voroiInputHandler = new VoroiInputHandler(cam, voronoiMapper.getVoronoiResults().voronoiRegions(), voronoiMapper, spectralPalette, mapGenerator);
         Gdx.input.setInputProcessor(voroiInputHandler);
 
         shapeRenderer = new ShapeRenderer();
@@ -146,36 +159,7 @@ public class PannoniaVoroi extends ApplicationAdapter {
 
         mesh.setVertices(vertices);
 
-        /*String vertexShader = "//our attributes\n" +
-                "attribute vec2 a_position;\n" +
-                "attribute float a_color;\n" +
-                "\n" +
-                "//our camera matrix\n" +
-                "uniform mat4 u_projTrans;\n" +
-                "\n" +
-                "//send the color out to the fragment shader\n" +
-                "varying float vColor;\n" +
-                "\n" +
-                "void main() {\n" +
-                "    vColor = a_color;\n" +
-                "    gl_Position = u_projTrans * vec4(a_position.xy, 0.0, 1.0);\n" +
-                "}";
-        String fragmentShader = " #version 130\n" +
-                "#ifdef GL_ES\n" +
-                "precision mediump float;\n" +
-                "#endif\n" +
-                "\n" +
-                "//input from vertex shader\n" +
-                "varying float vColor;\n" +
-                "\n" +
-                "void main() {\n" +
-                "int value = int(vColor);\n" +
-                "float rValue = ((value & 0x00ff0000) >> 16) / 255.0;\n" +
-                "float gValue = ((value & 0x0000ff00) >> 8) / 255.0;\n" +
-                "float bValue = ((value & 0x000000ff)) / 255.0;\n" +
-                "gl_FragColor = vec4(rValue, gValue, bValue, 1.0);" +
-                "}";*/
-        String vertexShader = "//our attributes\n" +
+        String vertexShader = "#version 130\n//our attributes\n" +
                 "attribute vec2 a_position;\n" +
                 "attribute float a_color;\n" +
                 "\n" +
@@ -215,12 +199,12 @@ public class PannoniaVoroi extends ApplicationAdapter {
 
         voronoiEdges = new float[voronoiMapper.getVoronoiResults().voronoiEdges.length * 6];
         i = 0;
+        Color blue = Color.BLUE;
         for (VoronoiEdge voronoiEdge : voronoiMapper.getVoronoiResults().voronoiEdges) {
             float x = (float) voronoiMapper.getVoronoiResults().voronoiVertices[voronoiEdge.vertex1].x;
             float y = (float) voronoiMapper.getVoronoiResults().voronoiVertices[voronoiEdge.vertex1].y;
             float x2 = (float) voronoiMapper.getVoronoiResults().voronoiVertices[voronoiEdge.vertex2].x;
             float y2 = (float) voronoiMapper.getVoronoiResults().voronoiVertices[voronoiEdge.vertex2].y;
-            Color blue = Color.BLUE;
 
             voronoiEdges[i] = x;
             voronoiEdges[i + 1] = y;
@@ -259,7 +243,7 @@ public class PannoniaVoroi extends ApplicationAdapter {
 
     @Override
     public void render() {
-        long start = System.currentTimeMillis();
+        //long start = System.currentTimeMillis();
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
         //no need for depth...
         Gdx.gl.glDepthMask(false);
@@ -290,7 +274,7 @@ public class PannoniaVoroi extends ApplicationAdapter {
         //polygons
         mesh.render(shaderProgram, GL20.GL_TRIANGLES);
         //edges
-        mesh2.render(shaderProgram, GL20.GL_LINES);
+        //mesh2.render(shaderProgram, GL20.GL_LINES);
         shaderProgram.end();
 
         shapeRenderer.begin(ShapeRenderer.ShapeType.Line);
@@ -312,29 +296,31 @@ public class PannoniaVoroi extends ApplicationAdapter {
         shapeRenderer.setColor(Color.GREEN);
         for (LineD edge: voronoiMapper.getDelaunayEdges()) {
             shapeRenderer.line((float) edge.start.x, (float)edge.start.y, (float)edge.end.x, (float)edge.end.y);;
-        }*/
+        }
 
-      /*  // draw generated points - not the exact center, az ->  Geoutils center of poly
+        // draw generated points - not the exact center, az ->  Geoutils center of poly
         shapeRenderer.setColor(Color.BLACK);
         for (PointD point : voronoiMapper.getSiteList()) {
             shapeRenderer.circle(((float) point.x), ((float) point.y), 1);
-        }*/
-
-        if (voroiInputHandler.islandCellList != null) {
+        }
+*/
+        if (mapGenerator.islandCellList != null) {
             shapeRenderer.setColor(Color.BLACK);
-            for (VoronoiCell voronoiCell : voroiInputHandler.islandCellList) {
+            for (VoronoiCell voronoiCell : mapGenerator.islandCellList) {
                 for (VoronoiCell neighbour : voronoiCell.getNeighbours()) {
                     if (neighbour.getHeight() <= 0.2f) {
                         List<PointD> same = new ArrayList<>();
-                        for (PointD vertex : voronoiCell.getVertices()) {
-                            for (PointD neighbourVertex : neighbour.getVertices()) {
-                                if (vertex.equals(neighbourVertex)) {
-                                    same.add(vertex);
+                        PointD[] voronoiCellVerticesD = voronoiCell.getVerticesD();
+                        PointD[] neighbourVerticesD = neighbour.getVerticesD();
+                        for (PointD aVoronoiCellVerticesD : voronoiCellVerticesD) {
+                            for (PointD aNeighbourVerticesD : neighbourVerticesD) {
+                                if (aVoronoiCellVerticesD.equals(aNeighbourVerticesD)) {
+                                    same.add(aVoronoiCellVerticesD);
                                 }
                             }
                         }
-                        shapeRenderer.rectLine(((float) same.get(0).x), ((float) same.get(0).y),
-                                ((float) same.get(1).x), ((float) same.get(1).y), 2);
+                        shapeRenderer.line(((float) same.get(0).x), ((float) same.get(0).y),
+                                ((float) same.get(1).x), ((float) same.get(1).y));
                     }
                 }
             }
@@ -390,7 +376,8 @@ public class PannoniaVoroi extends ApplicationAdapter {
         float effectiveViewportWidth = cam.viewportWidth * cam.zoom;
         float effectiveViewportHeight = cam.viewportHeight * cam.zoom;
 
-        cam.position.x = MathUtils.clamp(cam.position.x, effectiveViewportWidth / 2f, WORLD_WIDTH - effectiveViewportWidth / 2f);
+
+//        cam.position.x = MathUtils.clamp(cam.position.x, effectiveViewportWidth / 2f, WORLD_WIDTH - effectiveViewportWidth / 2f);
         cam.position.y = MathUtils.clamp(cam.position.y, effectiveViewportHeight / 2f, WORLD_HEIGHT - effectiveViewportHeight / 2f);
     }
 

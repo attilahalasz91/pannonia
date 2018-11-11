@@ -1,25 +1,27 @@
 package hu.halasz;
 
-import com.badlogic.gdx.Gdx;
-import com.badlogic.gdx.math.EarClippingTriangulator;
+import com.badlogic.gdx.graphics.Color;
 import lombok.Getter;
-import org.joda.time.LocalDateTime;
 import org.kynosarges.tektosyne.geometry.GeoUtils;
 import org.kynosarges.tektosyne.geometry.LineD;
 import org.kynosarges.tektosyne.geometry.PointD;
+import org.kynosarges.tektosyne.geometry.PolygonLocation;
+import org.kynosarges.tektosyne.geometry.RectD;
 import org.kynosarges.tektosyne.geometry.Voronoi;
 import org.kynosarges.tektosyne.geometry.VoronoiEdge;
 import org.kynosarges.tektosyne.geometry.VoronoiResults;
-import org.kynosarges.tektosyne.subdivision.Subdivision;
-import org.kynosarges.tektosyne.subdivision.SubdivisionEdge;
-import org.kynosarges.tektosyne.subdivision.SubdivisionFace;
-import org.kynosarges.tektosyne.subdivision.VoronoiMap;
 
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Queue;
+import java.util.Set;
+
+import static hu.halasz.PannoniaVoroi.spectralPalette;
 
 public class VoronoiMapper {
 
@@ -33,8 +35,10 @@ public class VoronoiMapper {
     static List<VoronoiCell> voronoiCellList;
    /* @Getter
     LineD[] delaunayEdges;*/
+   private MapGenerator mapGenerator;
 
-    public VoronoiMapper(PointD[] sites) {
+    public VoronoiMapper(PointD[] sites, MapGenerator mapGenerator) {
+        this.mapGenerator = mapGenerator;
         voronoiCellMap = new HashMap<>();
         voronoiCellList = new ArrayList<>();
 
@@ -68,16 +72,28 @@ public class VoronoiMapper {
 
             PointD vertex1Point = voronoiResults.voronoiVertices[voronoiEdge.vertex1];
             PointD vertex2Point = voronoiResults.voronoiVertices[voronoiEdge.vertex2];
-            voronoiCell1.addNeighbourSite(voronoiResults.generatorSites[site2]);
+            //voronoiCell1.addNeighbourSite(voronoiResults.generatorSites[site2]);
             voronoiCell1.addEdge(new LineD(vertex1Point.x, vertex1Point.y, vertex2Point.x, vertex2Point.y));
             voronoiCell1.addNeighbour(voronoiCell2);
-            voronoiCell2.addNeighbourSite(voronoiResults.generatorSites[site1]);
+            //voronoiCell2.addNeighbourSite(voronoiResults.generatorSites[site1]);
             voronoiCell2.addEdge(new LineD(vertex1Point.x, vertex1Point.y, vertex2Point.x, vertex2Point.y));
             voronoiCell2.addNeighbour(voronoiCell1);
         }
+
+        List<VoronoiCell> bigSites = mapGenerator.generateSites(10, new RectD(800, 100, 1500, 800));
+        for (VoronoiCell bigSite : bigSites) {
+            mapGenerator.erosionHeightGeneration(0.5f, 0.99f, 0.3f, 0.2f, bigSite);
+        }
+        List<VoronoiCell> smallSites = mapGenerator.generateSites(20, new RectD(650, 50, 1550, 900));
+        for (VoronoiCell smallSite : smallSites) {
+            mapGenerator.heightGeneration(0.2f, 0.99f, smallSite);
+        }
+        mapGenerator.setLandSites();
     }
 
-    private void lloydRelaxation(){
+
+
+    private void lloydRelaxation() {
 
     }
 
