@@ -37,7 +37,8 @@ public class ShaderTest implements ApplicationListener {
                     "	gl_FragColor = texture(u_texture, vTexCoord);\n" +
                     "}";*/
     private final String FRAG =
-            "// Water + Terrain shader\n" +
+            "#version 130\n" +
+                    "// Water + Terrain shader\n" +
                     "// 10/2014 Created by Frank Hugenroth /frankenburgh/\n" +
                     "// 'hash' and 'noise' function by iq\n" +
                     "// License: Creative Commons Attribution-NonCommercial-ShareAlike 3.0 Unported License.\n" +
@@ -212,12 +213,12 @@ public class ShaderTest implements ApplicationListener {
                     "\n" +
                     "void main()\n" +
                     "{\n" +
-                    "    light = vec3(-0., sin(iTime*0.5)*.5 + .35, 2.8); // position of the sun\n" +
-                    "\tvec2 uv = (gl_FragCoord.xy / iResolution.xy );\n" +//- vec2(-0.12, +0.25)
+                    "    light = vec3(-0., sin(iTime*0.5)*.5 + .35, 8.8); // position of the sun\n" +
+                    "\tvec2 uv = (vTexCoord.xy / iResolution.xy );\n" +//- vec2(-0.12, +0.25)
                     "\n" +
-                    "    float WATER_LEVEL = 0.54; // Water level (range: 0.0 - 2.0)\n" +
-                    "    /*if (iMouse.z>0.)\n" +
-                    "\t\tWATER_LEVEL = iMouse.x*.003;*/\n" +
+                    "    float WATER_LEVEL = 0.44; // Water level (range: 0.0 - 2.0)\n" +
+                    "    //if (iMouse.z>0.)\n" +
+                    "\t\t//WATER_LEVEL = iMouse.x*.003;\n" +
                     "    float deepwater_fadedepth   = 0.5 + coast2water_fadedepth;\n" +
                     "   /* if (iMouse.z>0.)\n" +
                     "\t  deepwater_fadedepth = iMouse.y*0.003 + coast2water_fadedepth;*/\n" +
@@ -271,7 +272,6 @@ public class ShaderTest implements ApplicationListener {
 
     private Texture tex;
     private Texture noise;
-    //private Texture tex;
     private OrthographicCamera cam;
     private ShaderProgram shaderProgram;
     private static float iTime = 0;
@@ -280,8 +280,12 @@ public class ShaderTest implements ApplicationListener {
     @Override
     public void create() {
 
-        tex = new Texture(Gdx.files.internal("ireland.png"));
-        noise = new Texture(Gdx.files.internal("noise.png"));
+        tex = new Texture(Gdx.files.internal("ireland.png"), true);
+        noise = new Texture(Gdx.files.internal("noise.png"), true);
+        tex.setWrap(Texture.TextureWrap.Repeat, Texture.TextureWrap.Repeat);
+        noise.setWrap(Texture.TextureWrap.Repeat, Texture.TextureWrap.Repeat);
+        tex.setFilter(Texture.TextureFilter.MipMap, Texture.TextureFilter.Linear);
+        noise.setFilter(Texture.TextureFilter.MipMap, Texture.TextureFilter.Linear);
 
         //important since we aren't using some uniforms and attributes that SpriteBatch expects
         ShaderProgram.pedantic = false;
@@ -316,6 +320,9 @@ public class ShaderTest implements ApplicationListener {
         //shaderProgram.setUniformi("u_mask", 2);
         shaderProgram.end();
 
+        ShaderTest2InputHandler inputHandler = new ShaderTest2InputHandler(cam);
+        Gdx.input.setInputProcessor(inputHandler);
+
     }
 
     @Override
@@ -327,6 +334,9 @@ public class ShaderTest implements ApplicationListener {
     @Override
     public void render() {
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
+
+        mapScrollWatcher();
+        cam.update();
 
         batch.begin();
         batch.setProjectionMatrix(cam.combined);
@@ -353,5 +363,41 @@ public class ShaderTest implements ApplicationListener {
         //batch.dispose();
         shaderProgram.dispose();
         tex.dispose();
+    }
+
+    private void mapScrollWatcher() {
+        int x = Gdx.input.getX();
+        int y = Gdx.input.getY();
+        int windowWidth = Gdx.graphics.getWidth();
+        int windowHeight = Gdx.graphics.getHeight();
+
+        //right rec
+        if (findPoint(windowWidth - 50, 0, windowWidth, windowHeight, x, y)) {
+            cam.translate(4f * cam.zoom, 0, 0);
+        }
+
+        //left rec
+        if (findPoint(0, 0, 50, windowHeight, x, y)) {
+            cam.translate(-4f * cam.zoom, 0, 0);
+        }
+
+        //top rec
+        if (findPoint(0, 0, windowWidth, 50, x, y)) {
+            cam.translate(0, 4f * cam.zoom, 0);
+        }
+
+        //down rec
+        if (findPoint(0, windowHeight - 50, windowWidth, windowHeight, x, y)) {
+            cam.translate(0, -4f * cam.zoom, 0);
+        }
+
+    }
+
+    boolean findPoint(int x1, int y1, int x2,
+                      int y2, int x, int y) {
+        if (x > x1 && x < x2 && y > y1 && y < y2) {
+            return true;
+        }
+        return false;
     }
 }

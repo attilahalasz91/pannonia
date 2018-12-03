@@ -12,6 +12,6 @@ public class DesktopLauncher {
 		LwjglApplicationConfiguration config = new LwjglApplicationConfiguration();
 		config.width = 1085;
 		config.height = 700;
-		new LwjglApplication(new ShaderTest2(), config);
+		new LwjglApplication(new ShaderTest(), config);
 	}
 }
