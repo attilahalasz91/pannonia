@@ -16,7 +16,7 @@ import java.util.List;
 import static hu.halasz.PannoniaVoroi.WORLD_WIDTH;
 
 public class ShaderTest2InputHandler implements InputProcessor {
-    public static final float SCROLL_SPEED = 0.2f;
+    public static final float SCROLL_SPEED = 0.05f;
     protected static final int LEFT_MOUSE_CLICK = 0;
     protected static final int RIGHT_MOUSE_CLICK = 1;
     private OrthographicCamera cam;
@@ -72,7 +72,7 @@ public class ShaderTest2InputHandler implements InputProcessor {
         float px = tp.x;
         float py = tp.y;
         cam.zoom += amount * SCROLL_SPEED;
-        cam.zoom = MathUtils.clamp(cam.zoom, 0.2f, 5f);
+        cam.zoom = MathUtils.clamp(cam.zoom, 0.02f, 5f);
         cam.update();
 
         if (cam.zoom != WORLD_WIDTH / cam.viewportWidth) {

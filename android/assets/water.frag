@@ -60,30 +60,36 @@ float col(vec2 coord,float time) {
 //---------- main
 
 void main() {
-    float time = iTime*1.3;
+//94f / 255, 79f / 255, 162f / 255
+    if (vColor == vec4(94.0/255.0, 79.0/255.0,162.0/255.0, 1.0)){
+        float time = iTime*1.3;
 
-    //vec2 p = (gl_FragCoord.xy) / iResolution.xy, c1 = p, c2 = p;
-    vec2 p = (a_position2.xy) / iResolution.xy*200.0, c1 = p, c2 = p;
-    float cc1 = col(c1,time);
+            //vec2 p = (gl_FragCoord.xy) / iResolution.xy, c1 = p, c2 = p;
+            vec2 p = (a_position2.xy) / iResolution.xy*200.0, c1 = p, c2 = p;
+            float cc1 = col(c1,time);
 
-    c2.x += iResolution.x/delta;
-    float dx = emboss*(cc1-col(c2,time))/delta;
+            c2.x += iResolution.x/delta;
+            float dx = emboss*(cc1-col(c2,time))/delta;
 
-    c2.x = p.x;
-    c2.y += iResolution.y/delta;
-    float dy = emboss*(cc1-col(c2,time))/delta;
+            c2.x = p.x;
+            c2.y += iResolution.y/delta;
+            float dy = emboss*(cc1-col(c2,time))/delta;
 
-    c1.x += dx*2.;
-    c1.y = -(c1.y+dy*2.);
+            c1.x += dx*2.;
+            c1.y = -(c1.y+dy*2.);
 
-    float alpha = 1.+dot(dx,dy)*intence;
+            float alpha = 1.+dot(dx,dy)*intence;
 
-    float ddx = dx - reflectionCutOff;
-    float ddy = dy - reflectionCutOff;
-    if (ddx > 0. && ddy > 0.)
-        alpha = pow(alpha, ddx*ddy*reflectionIntence);
+            float ddx = dx - reflectionCutOff;
+            float ddy = dy - reflectionCutOff;
+            if (ddx > 0. && ddy > 0.)
+                alpha = pow(alpha, ddx*ddy*reflectionIntence);
 
-    //vec4 col = texture(iChannel0,c1)*(alpha);
-    vec4 col = vColor*(alpha);
-    gl_FragColor = col;
+            //vec4 col = texture(iChannel0,c1)*(alpha);
+            vec4 col = vColor*(alpha);
+            gl_FragColor = col;
+    } else {
+        gl_FragColor = vColor;
+    }
+
 }

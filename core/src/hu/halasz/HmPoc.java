@@ -3,111 +3,79 @@ package hu.halasz;
 import com.badlogic.gdx.ApplicationListener;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.GL20;
+import com.badlogic.gdx.graphics.Mesh;
 import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.Texture;
+import com.badlogic.gdx.graphics.VertexAttribute;
+import com.badlogic.gdx.graphics.VertexAttributes;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
+import com.badlogic.gdx.graphics.g2d.Sprite;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.glutils.ShaderProgram;
 import com.badlogic.gdx.math.MathUtils;
 
-public class ShaderTest2 implements ApplicationListener {
+public class HmPoc implements ApplicationListener {
 
     private final String VERT =
-            "attribute vec4 a_position;\n" +
-                    "attribute vec2 a_texCoord0;\n" +
+            "#version 130\n" +
+                    "\n" +
+                    "//our attributes\n" +
+                    "attribute vec2 a_position;\n" +
+                    "\n" +
+                    "//hightmap\n" +
+                    "uniform sampler2D u_texture;\n" +
+                    "//our camera matrix\n" +
                     "uniform mat4 u_projTrans;\n" +
                     "\n" +
-                    "varying vec2 vTexCoord;\n" +
+                    "//send the color out to the fragment shader\n" +
+                    "varying vec4 vColor;\n" +
+                    "\n" +
                     "void main() {\n" +
-                    "    vTexCoord = a_texCoord0;\n" +
-                    "    gl_Position =  u_projTrans * a_position;\n" +
+                    "    vColor = texture2D(u_texture, floor( a_position / vec2(10)) /vec2(100));\n" +
+                    "\n" +
+                    "    gl_Position = u_projTrans * vec4(a_position.xy, 0.0, 1.0);\n" +
                     "}";
     private final String FRAG =
-            "uniform sampler2D u_texture; //default GL_TEXTURE0, expected by SpriteBatch\\n\" +\n" +
-                    "varying vec2 vTexCoord;\n" +
-                    "uniform float zoom;\n" +
+            "#version 130\n" +
                     "\n" +
-                    "uniform sampler2D spectralColorPalette;\n" +
+                    "#ifdef GL_ES\n" +
+                    "precision highp float;\n" +
+                    "#endif\n" +
                     "\n" +
-                    "#define HASHSCALE1 .1031\n" +
-                    "//  1 out, 1 in...\n" +
-                    "float hash11(float p)\n" +
-                    "{\n" +
-                    "\tvec3 p3  = fract(vec3(p) * HASHSCALE1);\n" +
-                    "    p3 += dot(p3, p3.yzx + 19.19);\n" +
-                    "    return fract((p3.x + p3.y) * p3.z);\n" +
-                    "}\n" +
-                    "vec4 interpolate(vec4 terrainColor) {\n" +
-                    "    float xn = terrainColor.r + terrainColor.g + terrainColor.b;\n" +
-                    "\n" +
-                    "    float y1 = 0.0;\n" +
-                    "    float y2 = 888.0;\n" +
-                    "    float x1 = 0.0;\n" +
-                    "    float x2 = 3.0;\n" +
-                    "    int yn = int( (((xn - x1) / (x2 - x1)) * (y2 - y1) + y1) ) ;\n" +
-                    "\n" +
-                    "    return texture(spectralColorPalette, vec2(1.0-yn/y2, 0.0));\n" +
-                    "}\n" +
+                    "uniform float iTime;\n" +
+                    "uniform vec3 iResolution;\n" +
+                    "//uniform sampler2D iChannel0;\n" +
+                    "varying vec4 vColor;\n" +
+                    "//our camera matrix\n" +
+                    "uniform mat4 u_projTrans;\n" +
                     "\n" +
                     "void main() {\n" +
-                    "    vec4 terrainColor = texture(u_texture, vTexCoord);\n" +
-                    "\n" +
-                    "float asd = 0;\n" +
-                    "float asd2 = 0;\n" +
-                    "if (fract((vTexCoord.y-0.5)/(1/zoom)) > 0.000001) {\n" +
-                    "asd =  mix(0,.1,hash11((vTexCoord.y-0.5)));\n" +
-                    "}\n" +
-                    "if (fract((vTexCoord.x-0.5)/(1/zoom)) > 0.000001) {\n" +
-                    "asd2 = mix(0,.1,hash11((vTexCoord.x-0.5)));\n" +
-                    "}\n" +
-                    "    gl_FragColor = vec4(interpolate(terrainColor).rgb-asd-asd2,1.);\n" +
-                    "}\n" +
-                    "\n";
+                    "    gl_FragColor = vColor;\n" +
+                    "}\n";
 
     private Texture tex;
-    private Texture spectral;
-    //private Texture tex;
     private OrthographicCamera cam;
     private ShaderProgram shaderProgram;
-    private SpriteBatch batch;
     private SpriteBatch fontbatch;
     private BitmapFont font;
+    private static Mesh mesh;
 
     @Override
     public void create() {
 
-        tex = new Texture(Gdx.files.internal("ireland.png"));
-        //tex.setFilter(Texture.TextureFilter.Linear, Texture.TextureFilter.Linear);//makes it not pixely when zoomed
-        spectral = new Texture(Gdx.files.internal("Spectral.png"));
+        tex = new Texture(Gdx.files.internal("hmpoc.bmp"));
 
-        //important since we aren't using some uniforms and attributes that SpriteBatch expects
         ShaderProgram.pedantic = false;
-
         shaderProgram = new ShaderProgram(VERT, FRAG);
         if (!shaderProgram.isCompiled()) {
             System.err.println(shaderProgram.getLog());
             System.exit(0);
         }
-
         if (shaderProgram.getLog().length() != 0)
             System.out.println(shaderProgram.getLog());
 
-
         cam = new OrthographicCamera(Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
         cam.setToOrtho(false);
-
-        spectral.bind(1);
-        //now we need to reset glActiveTexture to zero!!!! since sprite batch does not do this for us
-        Gdx.gl.glActiveTexture(GL20.GL_TEXTURE0);
-
-
-        batch = new SpriteBatch(1000, shaderProgram);
-        batch.setShader(shaderProgram);
-
-        shaderProgram.begin();
-        //set our sampler2D uniforms
-        shaderProgram.setUniformi("spectralColorPalette", 1);
-        shaderProgram.end();
 
         fontbatch = new SpriteBatch();
         font = new BitmapFont();
@@ -117,6 +85,31 @@ public class ShaderTest2 implements ApplicationListener {
         ShaderTest2InputHandler inputHandler = new ShaderTest2InputHandler(cam);
         Gdx.input.setInputProcessor(inputHandler);
 
+        int count = 0;
+        float[] vertices = new float[100 * 100 * 12];
+        for (int i = 0; i < 100; i++) {
+            for (int j = 0; j < 100; j++) {
+                vertices[count] = j * 10;
+                vertices[count + 1] = i * 10;
+                vertices[count + 2] = (j + 1) * 10;
+                vertices[count + 3] = i * 10;
+                vertices[count + 4] = j * 10;
+                vertices[count + 5] = (i + 1) * 10;
+
+                vertices[count + 6] = (j + 1) * 10;
+                vertices[count + 7] = i*10;
+                vertices[count + 8] = (j + 1) * 10;
+                vertices[count + 9] = (i + 1) * 10;
+                vertices[count + 10] = j * 10;
+                vertices[count + 11] = (i + 1) * 10;
+                count += 12;
+            }
+        }
+
+        mesh = new Mesh(true, vertices.length, 0,
+                new VertexAttribute(VertexAttributes.Usage.Position, 2, "a_position"));
+
+        mesh.setVertices(vertices);
     }
 
     @Override
@@ -127,21 +120,28 @@ public class ShaderTest2 implements ApplicationListener {
 
     @Override
     public void render() {
-        Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
+       // Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
+        Gdx.gl20.glViewport(0, 0, Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
+        Gdx.gl20.glClear(GL20.GL_COLOR_BUFFER_BIT);
+        Gdx.gl20.glEnable(GL20.GL_TEXTURE_2D);
+        Gdx.gl20.glEnable(GL20.GL_BLEND);
+        Gdx.gl20.glBlendFunc(GL20.GL_SRC_ALPHA, GL20.GL_ONE_MINUS_SRC_ALPHA);
 
         mapScrollWatcher();
-       // handleInput();
+        // handleInput();
         cam.update();
 
+        tex.bind();
         shaderProgram.begin();
+        //
+        shaderProgram.setUniformMatrix("u_projTrans", cam.combined);
+        shaderProgram.setUniformi("u_texture", 0);
         //set our sampler2D uniforms
         shaderProgram.setUniformf("zoom", cam.zoom);
+
+        mesh.render(shaderProgram, GL20.GL_TRIANGLES);
         shaderProgram.end();
 
-        batch.begin();
-        batch.setProjectionMatrix(cam.combined);
-        batch.draw(tex, 0, 0);
-        batch.end();
 
         fontbatch.begin();
         fontbatch.setProjectionMatrix(cam.combined);
@@ -211,4 +211,5 @@ public class ShaderTest2 implements ApplicationListener {
 //        cam.position.x = MathUtils.clamp(cam.position.x, effectiveViewportWidth / 2f, WORLD_WIDTH - effectiveViewportWidth / 2f);
         cam.position.y = MathUtils.clamp(cam.position.y, effectiveViewportHeight / 2f, Gdx.graphics.getHeight() - effectiveViewportHeight / 2f);
     }
+
 }

@@ -2,6 +2,7 @@ package hu.halasz.desktop;
 
 import com.badlogic.gdx.backends.lwjgl.LwjglApplication;
 import com.badlogic.gdx.backends.lwjgl.LwjglApplicationConfiguration;
+import hu.halasz.HmPoc;
 import hu.halasz.Pannonia;
 import hu.halasz.PannoniaVoroi;
 import hu.halasz.ShaderTest;
@@ -12,6 +13,6 @@ public class DesktopLauncher {
 		LwjglApplicationConfiguration config = new LwjglApplicationConfiguration();
 		config.width = 1085;
 		config.height = 700;
-		new LwjglApplication(new ShaderTest(), config);
+		new LwjglApplication(new HmPoc(), config);
 	}
 }

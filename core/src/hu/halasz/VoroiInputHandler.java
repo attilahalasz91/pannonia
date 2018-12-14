@@ -23,7 +23,7 @@ import java.util.Set;
 import static hu.halasz.PannoniaVoroi.WORLD_WIDTH;
 
 public class VoroiInputHandler implements InputProcessor {
-    public static final float SCROLL_SPEED = 0.5f;
+    public static final float SCROLL_SPEED = 0.1f;
     protected static final int LEFT_MOUSE_CLICK = 0;
     protected static final int RIGHT_MOUSE_CLICK = 1;
     private OrthographicCamera cam;
@@ -127,7 +127,7 @@ public class VoroiInputHandler implements InputProcessor {
         float px = tp.x;
         float py = tp.y;
         cam.zoom += amount * SCROLL_SPEED;
-        cam.zoom = MathUtils.clamp(cam.zoom, 0.5f, WORLD_WIDTH / cam.viewportWidth);
+        cam.zoom = MathUtils.clamp(cam.zoom, 0.2f, WORLD_WIDTH / cam.viewportWidth);
         cam.update();
 
         if (cam.zoom != WORLD_WIDTH / cam.viewportWidth) {

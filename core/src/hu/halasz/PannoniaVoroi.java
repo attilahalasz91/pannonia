@@ -91,6 +91,10 @@ public class PannoniaVoroi extends ApplicationAdapter {
 
     @Override
     public void create() {
+        System.out.println(new Color(94f / 255, 79f / 255, 162f / 255, 1).toIntBits());
+        System.out.println(Color.argb8888(new Color(94f / 255, 79f / 255, 162f / 255, 1)));
+        System.out.println(Color.rgba8888(new Color(94f / 255, 79f / 255, 162f / 255, 1)));
+
         spectralPalette = new Pixmap(Gdx.files.internal("Spectral.png"));
         mapGenerator = new MapGenerator(WORLD_WIDTH, WORLD_HEIGHT);
         /*BufferedImage image = null;
@@ -113,7 +117,7 @@ public class PannoniaVoroi extends ApplicationAdapter {
             pointDS[i] = p.get(i);
         }*/
         //random points
-        pointDS = GeoUtils.randomPoints(10000, new RectD(500, 1, MASK_BMP_WIDTH, MASK_BMP_HEIGHT));
+        pointDS = GeoUtils.randomPoints(100000, new RectD(500, 1, MASK_BMP_WIDTH, MASK_BMP_HEIGHT));
 
         Gdx.app.log("mapper start: ", LocalDateTime.now().toString());
         voronoiMapper = new VoronoiMapper(pointDS, mapGenerator);
@@ -277,32 +281,38 @@ public class PannoniaVoroi extends ApplicationAdapter {
                 "//---------- main\n" +
                 "\n" +
                 "void main() {\n" +
-                "    float time = iTime*1.3;\n" +
+                "//94f / 255, 79f / 255, 162f / 255\n" +
+                "    if (length(vColor - vec4(0.0,0.0,76.5/255.0, 1.0)) <= 0.01){\n" +
+                "        float time = iTime*1.3;\n" +
                 "\n" +
-                "    //vec2 p = (gl_FragCoord.xy) / iResolution.xy, c1 = p, c2 = p;\n" +
-                "    vec2 p = (a_position2.xy) / iResolution.xy*200.0, c1 = p, c2 = p;\n" +
-                "    float cc1 = col(c1,time);\n" +
+                "            //vec2 p = (gl_FragCoord.xy) / iResolution.xy, c1 = p, c2 = p;\n" +
+                "            vec2 p = (a_position2.xy) / iResolution.xy*400.0, c1 = p, c2 = p;\n" +
+                "            float cc1 = col(c1,time);\n" +
                 "\n" +
-                "    c2.x += iResolution.x/delta;\n" +
-                "    float dx = emboss*(cc1-col(c2,time))/delta;\n" +
+                "            c2.x += iResolution.x/delta;\n" +
+                "            float dx = emboss*(cc1-col(c2,time))/delta;\n" +
                 "\n" +
-                "    c2.x = p.x;\n" +
-                "    c2.y += iResolution.y/delta;\n" +
-                "    float dy = emboss*(cc1-col(c2,time))/delta;\n" +
+                "            c2.x = p.x;\n" +
+                "            c2.y += iResolution.y/delta;\n" +
+                "            float dy = emboss*(cc1-col(c2,time))/delta;\n" +
                 "\n" +
-                "    c1.x += dx*2.;\n" +
-                "    c1.y = -(c1.y+dy*2.);\n" +
+                "            c1.x += dx*2.;\n" +
+                "            c1.y = -(c1.y+dy*2.);\n" +
                 "\n" +
-                "    float alpha = 1.+dot(dx,dy)*intence;\n" +
+                "            float alpha = 1.+dot(dx,dy)*intence;\n" +
                 "\n" +
-                "    float ddx = dx - reflectionCutOff;\n" +
-                "    float ddy = dy - reflectionCutOff;\n" +
-                "    if (ddx > 0. && ddy > 0.)\n" +
-                "        alpha = pow(alpha, ddx*ddy*reflectionIntence);\n" +
+                "            float ddx = dx - reflectionCutOff;\n" +
+                "            float ddy = dy - reflectionCutOff;\n" +
+                "            if (ddx > 0. && ddy > 0.)\n" +
+                "                alpha = pow(alpha, ddx*ddy*reflectionIntence);\n" +
                 "\n" +
-                "    //vec4 col = texture(iChannel0,c1)*(alpha);\n" +
-                "    vec4 col = vColor*(alpha);\n" +
-                "    gl_FragColor = col;\n" +
+                "            //vec4 col = texture(iChannel0,c1)*(alpha);\n" +
+                "            vec4 col = vColor*(alpha);\n" +
+                "            gl_FragColor = col;\n" +
+                "    } else {\n" +
+                "        gl_FragColor = vColor;\n" +
+                "    }\n" +
+                "\n" +
                 "}\n";
 
         ShaderProgram.pedantic = false;
